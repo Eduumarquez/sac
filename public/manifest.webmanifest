@@ -1,0 +1,9 @@
+{
+  "name": "SAC",
+  "short_name": "SAC",
+  "start_url": "/aluno",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#0f766e",
+  "icons": []
+}
