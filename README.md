@@ -29,6 +29,12 @@ npm run lint    # verificação de código
 npm run build   # build de produção
 ```
 
+## Site no ar
+
+O site é publicado automaticamente no GitHub Pages a cada push na `main`, pelo workflow `.github/workflows/deploy-pages.yml`: https://eduumarquez.github.io/sac/
+
+Por enquanto o app é exportado como site estático (`output: "export"`). Quando precisar de rotas no servidor (login com cookies, webhooks do Asaas), migre para uma hospedagem com Node, como a Vercel.
+
 ## Banco de dados
 
 1. Crie um projeto em [supabase.com](https://supabase.com).

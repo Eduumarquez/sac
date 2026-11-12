@@ -1,7 +1,8 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import { alunosDemo } from "@/lib/demo";
-import { calcularRisco, mensagemSugerida, type NivelRisco } from "@/lib/risco";
+import { useEffect, useState } from "react";
+import { alunosDemo, type AlunoDemo } from "@/lib/demo";
+import { calcularRisco, mensagemSugerida, type NivelRisco, type ResultadoRisco } from "@/lib/risco";
 
 const corNivel: Record<NivelRisco, string> = {
   alto: "bg-red-100 text-red-800",
@@ -9,23 +10,32 @@ const corNivel: Record<NivelRisco, string> = {
   baixo: "bg-emerald-100 text-emerald-800",
 };
 
-export default function Painel() {
-  // TODO: trocar os dados de exemplo por uma consulta ao Supabase
-  const lista = alunosDemo
-    .map((a) => ({ aluno: a, risco: calcularRisco(a) }))
-    .sort((x, y) => y.risco.pontuacao - x.risco.pontuacao);
+type Item = { aluno: AlunoDemo; risco: ResultadoRisco };
 
-  const emRisco = lista.filter((l) => l.risco.nivel !== "baixo");
+export default function Painel() {
+  // Calculado no navegador para usar a data de hoje (o site é estático).
+  // TODO: trocar os dados de exemplo por uma consulta ao Supabase
+  const [lista, setLista] = useState<Item[] | null>(null);
+
+  useEffect(() => {
+    setLista(
+      alunosDemo
+        .map((a) => ({ aluno: a, risco: calcularRisco(a) }))
+        .sort((x, y) => y.risco.pontuacao - x.risco.pontuacao),
+    );
+  }, []);
+
+  const emRisco = lista?.filter((l) => l.risco.nivel !== "baixo") ?? [];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="text-2xl font-bold">Lista do dia</h1>
       <p className="mt-1 text-zinc-600">
-        {emRisco.length} alunos precisam de contato hoje. Dados de exemplo.
+        {lista ? `${emRisco.length} alunos precisam de contato hoje. Dados de exemplo.` : "Calculando..."}
       </p>
 
       <ul className="mt-6 space-y-3">
-        {lista.map(({ aluno, risco }) => {
+        {lista?.map(({ aluno, risco }) => {
           const primeiroNome = aluno.nome.split(" ")[0];
           const texto = mensagemSugerida(primeiroNome, risco);
           const linkWhats = `https://wa.me/${aluno.telefone}?text=${encodeURIComponent(texto)}`;
