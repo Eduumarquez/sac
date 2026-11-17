@@ -288,14 +288,14 @@ export function GraficoLinha({ pontos, unidade, altura = 140, menorEhMelhor }: {
       <svg viewBox={`0 0 ${largura} ${altura}`} className="w-full" role="img" aria-label={`Evolução de ${primeiro.y} para ${ultimo.y} ${unidade}`}>
         <defs>
           <linearGradient id="grad-area" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#1fa37a" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="#1fa37a" stopOpacity={0} />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
           </linearGradient>
         </defs>
         <path d={area} fill="url(#grad-area)" />
-        <path d={linha} fill="none" stroke="#128763" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={linha} fill="none" stroke="#2563eb" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
         {ord.map((p, i) => (
-          <circle key={i} cx={px(p.x.getTime())} cy={py(p.y)} r={i === ord.length - 1 ? 4.5 : 3} fill="white" stroke="#128763" strokeWidth={2}>
+          <circle key={i} cx={px(p.x.getTime())} cy={py(p.y)} r={i === ord.length - 1 ? 4.5 : 3} fill="white" stroke="#2563eb" strokeWidth={2}>
             <title>{`${p.x.toLocaleDateString("pt-BR")}: ${p.y} ${unidade}`}</title>
           </circle>
         ))}

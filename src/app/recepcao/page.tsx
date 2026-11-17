@@ -73,7 +73,7 @@ export default function Recepcao() {
       <CabecalhoPagina titulo="Recepção" subtitulo="Entrada por QR code, regra da catraca e check-in de Wellhub e Totalpass" />
 
       {resultado && (
-        <div role="status" className={`animar-entrada mb-5 flex items-center gap-4 rounded-3xl p-5 text-white shadow-lg ${resultado.liberado ? "bg-gradient-to-r from-emerald-600 to-marca-700" : "bg-gradient-to-r from-red-600 to-red-700"}`}>
+        <div role="status" className={`animar-entrada mb-5 flex items-center gap-4 rounded-3xl p-5 text-white shadow-lg ${resultado.liberado ? "bg-gradient-to-r from-emerald-600 to-emerald-700" : "bg-gradient-to-r from-red-600 to-red-700"}`}>
           {resultado.liberado ? <CheckCircle2 size={44} /> : <ShieldX size={44} />}
           <div className="min-w-0">
             <p className="text-2xl font-bold">{resultado.liberado ? "Acesso liberado" : "Acesso bloqueado"}</p>

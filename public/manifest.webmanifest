@@ -4,6 +4,6 @@
   "start_url": "./aluno/",
   "display": "standalone",
   "background_color": "#fafafa",
-  "theme_color": "#0f766e",
+  "theme_color": "#1d4ed8",
   "icons": []
 }
