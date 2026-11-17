@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { CalendarClock, ClipboardList, Users } from "lucide-react";
 import { useBanco } from "@/lib/db";
 import { dataISO, formatarData } from "@/lib/datas";
-import { Cartao, Carregando, Etiqueta, Indicador, Vazio } from "@/components/ui";
+import { CabecalhoPagina, Carregando, Etiqueta, Indicador, Vazio } from "@/components/ui";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
+import { ListaCarteira } from "@/components/ListaCarteira";
 
 export default function AreaNutricionista() {
   const db = useBanco();
@@ -12,48 +13,44 @@ export default function AreaNutricionista() {
   const eu = usePessoaSelecionada(nutris, "nutricionista");
   if (!db) return <Carregando />;
   const hoje = dataISO(new Date());
+  const em7 = dataISO(new Date(Date.now() + 7 * 86_400_000));
   const meus = db.alunos.filter((a) => a.status === "ativo" && a.nutricionistaId === eu).map((a) => {
     const consultas = db.consultas.filter((c) => c.alunoId === a.id).sort((x, y) => y.data.localeCompare(x.data));
     const plano = db.planosAlimentares.find((p) => p.alunoId === a.id && p.ativo);
     const retorno = consultas[0]?.proximoRetorno;
     const pend: string[] = [];
-    if (!consultas.length) pend.push("primeira consulta");
-    if (!plano) pend.push("montar plano alimentar");
-    if (retorno && retorno < hoje) pend.push("retorno atrasado");
-    return { a, ultima: consultas[0], plano, retorno, pend };
-  }).sort((x, y) => (x.retorno ?? "0").localeCompare(y.retorno ?? "0"));
-
-  const proximos = meus.filter((m) => m.retorno && m.retorno >= hoje);
+    if (!consultas.length) pend.push("1ª consulta");
+    if (!plano) pend.push("Montar plano alimentar");
+    const atrasado = !!retorno && retorno < hoje;
+    return { a, ultima: consultas[0], plano, retorno, pend, atrasado, estaSemana: !!retorno && retorno >= hoje && retorno <= em7 };
+  }).sort((x, y) => Number(y.atrasado) - Number(x.atrasado) || y.pend.length - x.pend.length || (x.retorno ?? "9").localeCompare(y.retorno ?? "9"));
+  const nomeEu = nutris.find((p) => p.id === eu)?.nome.split(" ")[0];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Área da nutricionista</h1>
-        <SeletorPessoa opcoes={nutris} tipo="nutricionista" rotulo="Entrar como" />
+    <main className="mx-auto max-w-4xl px-4 py-8">
+      <CabecalhoPagina titulo={`Olá, ${nomeEu}`} subtitulo="Seus pacientes, retornos e planos alimentares" acao={<SeletorPessoa opcoes={nutris} tipo="nutricionista" rotulo="Entrar como" />} />
+
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        <Indicador rotulo="Pacientes" valor={meus.length} icone={<Users size={18} />} />
+        <Indicador rotulo="Retornos em 7 dias" valor={meus.filter((m) => m.estaSemana).length} icone={<CalendarClock size={18} />} />
+        <Indicador rotulo="Pendências" valor={meus.filter((m) => m.pend.length || m.atrasado).length} icone={<ClipboardList size={18} />} destaque={meus.some((m) => m.atrasado) ? "vermelho" : undefined} />
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3">
-        <Indicador rotulo="Pacientes" valor={meus.length} />
-        <Indicador rotulo="Retornos marcados" valor={proximos.length} />
-        <Indicador rotulo="Com pendência" valor={meus.filter((m) => m.pend.length).length} />
-      </div>
-
-      <div className="mt-6 space-y-3">
-        {!meus.length && <Vazio>Nenhum paciente atribuído. Alunos dos planos com nutricionista aparecem aqui após a matrícula.</Vazio>}
-        {meus.map(({ a, ultima, plano, retorno, pend }) => (
-          <Cartao key={a.id}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Link href={`/nutricionista/aluno/?id=${a.id}`} className="font-semibold text-teal-800 hover:underline">{a.nome}</Link>
-              {retorno && <span className="text-sm text-zinc-500">Retorno: {formatarData(retorno)}</span>}
-            </div>
-            <p className="mt-1 text-sm text-zinc-600">
-              {ultima ? `Última consulta em ${formatarData(ultima.data)}${ultima.pesoKg ? ` · ${ultima.pesoKg} kg` : ""}` : "Ainda sem consulta"}
-              {plano ? ` · plano de ${plano.metaKcal} kcal` : ""}
-            </p>
-            {pend.length > 0 && <div className="mt-2 flex flex-wrap gap-1">{pend.map((p) => <Etiqueta key={p} cor={p === "retorno atrasado" ? "vermelho" : "amarelo"}>{p}</Etiqueta>)}</div>}
-          </Cartao>
-        ))}
-      </div>
+      <ListaCarteira
+        vazio={<Vazio>Nenhum paciente ainda. Alunos dos planos com nutricionista aparecem aqui após a matrícula.</Vazio>}
+        itens={meus.map(({ a, ultima, plano, retorno, pend, atrasado, estaSemana }) => ({
+          id: a.id, nome: a.nome, href: `/nutricionista/aluno/?id=${a.id}`,
+          urgente: atrasado || pend.length > 0 || estaSemana,
+          linha: ultima ? `Última consulta em ${formatarData(ultima.data)}${ultima.pesoKg ? ` · ${ultima.pesoKg} kg` : ""}${plano ? ` · ${plano.metaKcal} kcal` : ""}` : "Ainda sem consulta",
+          etiquetas: (
+            <>
+              {atrasado && <Etiqueta cor="vermelho">Retorno atrasado ({formatarData(retorno!)})</Etiqueta>}
+              {estaSemana && <Etiqueta cor="azul">Retorno em {formatarData(retorno!)}</Etiqueta>}
+              {pend.map((p) => <Etiqueta key={p} cor="amarelo">{p}</Etiqueta>)}
+            </>
+          ),
+        }))}
+      />
     </main>
   );
 }

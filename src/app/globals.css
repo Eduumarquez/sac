@@ -1,5 +1,40 @@
 @import "tailwindcss";
 
-body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+@theme {
+  --color-marca-50: #effaf6;
+  --color-marca-100: #d7f2e7;
+  --color-marca-200: #b1e4d1;
+  --color-marca-500: #1fa37a;
+  --color-marca-600: #128763;
+  --color-marca-700: #0f6d52;
+  --color-marca-800: #0e5643;
+  --color-marca-900: #0c4738;
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-marca-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.animar-entrada { animation: entrar 0.2s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animar-entrada { animation: none; }
+}
+
+/* espaço para a barra inferior do app do aluno no celular */
+.pb-barra { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }

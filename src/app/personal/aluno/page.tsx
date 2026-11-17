@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useBanco } from "@/lib/db";
-import { Abas, BotaoLink, Cartao, Carregando, Vazio } from "@/components/ui";
+import { Abas, Cartao, Carregando, Vazio } from "@/components/ui";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 import { EditorTreino, FormAvaliacao } from "@/components/editores";
 
@@ -23,20 +24,20 @@ function Detalhe() {
   const ultimaAltura = db.avaliacoes.filter((a) => a.alunoId === id).sort((a, b) => b.data.localeCompare(a.data))[0]?.alturaCm;
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <BotaoLink href="/personal/" variante="secundario">← Meus alunos</BotaoLink>
+    <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <Link href="/personal/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus alunos</Link>
       <CabecalhoAluno db={db} alunoId={id} />
       <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "treino", rotulo: "Treino" }, { id: "avaliacao", rotulo: "Avaliação física" }, { id: "evolucao", rotulo: "Evolução" }, { id: "nutricao", rotulo: "Nutrição" }]} />
 
       {aba === "treino" && (
-        <Cartao titulo={editando ? "Montar treino" : "Treino atual"} acao={!editando && <button className="text-sm text-teal-700 hover:underline" onClick={() => setEditando(true)}>{treino ? "Editar / renovar" : "Montar treino"}</button>}>
+        <Cartao titulo={editando ? "Montar treino" : "Treino atual"} acao={!editando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setEditando(true)}>{treino ? "Editar / renovar" : "Montar treino"}</button>}>
           {editando ? <EditorTreino alunoId={id} personalId={personalId} atual={treino} aoSalvar={() => setEditando(false)} /> : <TreinoVisual treino={treino} />}
         </Cartao>
       )}
 
       {aba === "avaliacao" && (
         <>
-          <Cartao titulo="Nova avaliação" acao={!avaliando && <button className="text-sm text-teal-700 hover:underline" onClick={() => setAvaliando(true)}>Registrar</button>}>
+          <Cartao titulo="Nova avaliação" acao={!avaliando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setAvaliando(true)}>Registrar</button>}>
             {avaliando ? <FormAvaliacao alunoId={id} personalId={personalId} alturaAnterior={ultimaAltura} aoSalvar={() => setAvaliando(false)} /> : <p className="text-sm text-zinc-500">Registre peso, medidas e percentual de gordura. O aluno vê a evolução no app.</p>}
           </Cartao>
           <EvolucaoCorporal db={db} alunoId={id} />

@@ -4,7 +4,8 @@ import { useState } from "react";
 import { alterar } from "@/lib/db";
 import { dataISO, isoAgora, novoId } from "@/lib/datas";
 import type { DivisaoTreino, PlanoAlimentar, Refeicao, Treino } from "@/lib/tipos";
-import { Botao, Campo, estiloInput } from "./ui";
+import { Plus, Trash2 } from "lucide-react";
+import { Botao, Campo, avisar, estiloInput } from "./ui";
 
 export function EditorTreino({ alunoId, personalId, atual, aoSalvar }: { alunoId: string; personalId: string; atual?: Treino; aoSalvar: () => void }) {
   const [divisoes, setDivisoes] = useState<DivisaoTreino[]>(
@@ -18,28 +19,30 @@ export function EditorTreino({ alunoId, personalId, atual, aoSalvar }: { alunoId
       .filter((d) => d.exercicios.length);
     const novo: Treino = { id: novoId(), alunoId, personalId, nome: "Treino atual", criadoEm: isoAgora(), ativo: true, divisoes: limpas };
     alterar((db) => ({ ...db, treinos: [...db.treinos.map((t) => (t.alunoId === alunoId ? { ...t, ativo: false } : t)), novo] }));
+    avisar("Treino salvo. O aluno já vê no app.");
     aoSalvar();
   }
 
   return (
     <div className="space-y-4">
       {divisoes.map((d, i) => (
-        <div key={i} className="rounded-lg border border-zinc-200 p-3">
+        <div key={i} className="rounded-2xl border border-zinc-200 bg-zinc-50/50 p-3">
           <div className="flex gap-2">
             <input className={estiloInput} value={d.nome} onChange={(e) => mudar((x) => { x[i].nome = e.target.value; })} placeholder="Nome da divisão (ex.: A - Peito)" />
-            <Botao variante="secundario" onClick={() => mudar((x) => { x.splice(i, 1); })}>Remover</Botao>
+            <Botao variante="secundario" aria-label="Remover divisão" onClick={() => mudar((x) => { x.splice(i, 1); })} icone={<Trash2 size={16} />}><span className="hidden sm:inline">Remover</span></Botao>
           </div>
+          <div className="mt-3 hidden grid-cols-12 gap-1 px-1 text-xs text-zinc-400 sm:grid"><span className="col-span-5">Exercício</span><span className="col-span-2">Séries</span><span className="col-span-2">Reps</span><span className="col-span-2">Carga (kg)</span></div>
           <div className="mt-2 space-y-2">
             {d.exercicios.map((e, j) => (
               <div key={j} className="grid grid-cols-12 gap-1">
-                <input className={`${estiloInput} col-span-12 sm:col-span-5`} placeholder="Exercício" value={e.exercicio} onChange={(ev) => mudar((x) => { x[i].exercicios[j].exercicio = ev.target.value; })} />
-                <input className={`${estiloInput} col-span-3 sm:col-span-2`} type="number" min={1} title="Séries" value={e.series} onChange={(ev) => mudar((x) => { x[i].exercicios[j].series = Number(ev.target.value); })} />
-                <input className={`${estiloInput} col-span-3 sm:col-span-2`} title="Repetições" value={e.repeticoes} onChange={(ev) => mudar((x) => { x[i].exercicios[j].repeticoes = ev.target.value; })} />
-                <input className={`${estiloInput} col-span-4 sm:col-span-2`} type="number" step="0.5" placeholder="kg" value={e.cargaKg ?? ""} onChange={(ev) => mudar((x) => { x[i].exercicios[j].cargaKg = ev.target.value ? Number(ev.target.value) : undefined; })} />
-                <button className="col-span-2 text-sm text-zinc-400 hover:text-red-600 sm:col-span-1" onClick={() => mudar((x) => { x[i].exercicios.splice(j, 1); })} aria-label="Remover exercício">✕</button>
+                <input className={`${estiloInput} col-span-12 sm:col-span-5`} placeholder="Exercício" aria-label="Exercício" value={e.exercicio} onChange={(ev) => mudar((x) => { x[i].exercicios[j].exercicio = ev.target.value; })} />
+                <input className={`${estiloInput} col-span-3 sm:col-span-2`} type="number" min={1} title="Séries" aria-label="Séries" placeholder="Séries" value={e.series} onChange={(ev) => mudar((x) => { x[i].exercicios[j].series = Number(ev.target.value); })} />
+                <input className={`${estiloInput} col-span-3 sm:col-span-2`} title="Repetições" aria-label="Repetições" placeholder="Reps" value={e.repeticoes} onChange={(ev) => mudar((x) => { x[i].exercicios[j].repeticoes = ev.target.value; })} />
+                <input className={`${estiloInput} col-span-4 sm:col-span-2`} type="number" step="0.5" placeholder="kg" aria-label="Carga em kg" value={e.cargaKg ?? ""} onChange={(ev) => mudar((x) => { x[i].exercicios[j].cargaKg = ev.target.value ? Number(ev.target.value) : undefined; })} />
+                <button className="col-span-2 flex items-center justify-center text-zinc-400 hover:text-red-600 sm:col-span-1" onClick={() => mudar((x) => { x[i].exercicios.splice(j, 1); })} aria-label="Remover exercício"><Trash2 size={16} /></button>
               </div>
             ))}
-            <button className="text-sm text-teal-700 hover:underline" onClick={() => mudar((x) => { x[i].exercicios.push({ exercicio: "", series: 3, repeticoes: "12" }); })}>+ exercício</button>
+            <button className="inline-flex items-center gap-1 text-sm font-medium text-marca-700 hover:underline" onClick={() => mudar((x) => { x[i].exercicios.push({ exercicio: "", series: 3, repeticoes: "12" }); })}><Plus size={16} /> Adicionar exercício</button>
           </div>
         </div>
       ))}
@@ -65,6 +68,7 @@ export function FormAvaliacao({ alunoId, personalId, alturaAnterior, aoSalvar }:
         cinturaCm: n("cintura"), quadrilCm: n("quadril"), bracoCm: n("braco"), coxaCm: n("coxa"), observacoes: v.obs,
       }],
     }));
+    avisar("Avaliação registrada");
     aoSalvar();
   }
   return (
@@ -94,6 +98,7 @@ export function EditorPlanoAlimentar({ alunoId, nutricionistaId, atual, aoSalvar
       proteinaG: prot ? Number(prot) : undefined, refeicoes: refeicoes.filter((r) => r.itens.trim()), orientacoes: orient,
     };
     alterar((db) => ({ ...db, planosAlimentares: [...db.planosAlimentares.map((p) => (p.alunoId === alunoId ? { ...p, ativo: false } : p)), novo] }));
+    avisar("Plano alimentar salvo");
     aoSalvar();
   }
   return (
@@ -107,10 +112,10 @@ export function EditorPlanoAlimentar({ alunoId, nutricionistaId, atual, aoSalvar
           <input className={`${estiloInput} col-span-3 sm:col-span-2`} value={r.horario} onChange={(e) => mudar(i, "horario", e.target.value)} />
           <input className={`${estiloInput} col-span-9 sm:col-span-3`} value={r.nome} onChange={(e) => mudar(i, "nome", e.target.value)} />
           <input className={`${estiloInput} col-span-10 sm:col-span-6`} placeholder="Alimentos e quantidades" value={r.itens} onChange={(e) => mudar(i, "itens", e.target.value)} />
-          <button className="col-span-2 text-sm text-zinc-400 hover:text-red-600 sm:col-span-1" onClick={() => setRefeicoes((x) => x.filter((_, j) => j !== i))} aria-label="Remover refeição">✕</button>
+          <button className="col-span-2 flex items-center justify-center text-zinc-400 hover:text-red-600 sm:col-span-1" onClick={() => setRefeicoes((x) => x.filter((_, j) => j !== i))} aria-label="Remover refeição"><Trash2 size={16} /></button>
         </div>
       ))}
-      <button className="text-sm text-teal-700 hover:underline" onClick={() => setRefeicoes((x) => [...x, { nome: "Lanche", horario: "", itens: "" }])}>+ refeição</button>
+      <button className="text-sm text-marca-700 hover:underline" onClick={() => setRefeicoes((x) => [...x, { nome: "Lanche", horario: "", itens: "" }])}>+ refeição</button>
       <Campo rotulo="Orientações gerais"><textarea className={estiloInput} rows={2} value={orient} onChange={(e) => setOrient(e.target.value)} /></Campo>
       <Botao onClick={salvar}>Salvar plano alimentar</Botao>
     </div>
@@ -127,6 +132,7 @@ export function FormConsulta({ alunoId, nutricionistaId, aoSalvar }: { alunoId: 
       ...db,
       consultas: [...db.consultas, { id: novoId(), alunoId, nutricionistaId, data: isoAgora(), pesoKg: peso ? Number(peso.replace(",", ".")) : undefined, adesao, anotacoes: notas, proximoRetorno: retorno || undefined }],
     }));
+    avisar("Consulta registrada");
     aoSalvar();
   }
   return (
@@ -138,7 +144,7 @@ export function FormConsulta({ alunoId, nutricionistaId, aoSalvar }: { alunoId: 
       <Campo rotulo="Quanto o aluno seguiu o plano?">
         <div className="flex gap-1">
           {([1, 2, 3, 4, 5] as const).map((n) => (
-            <button key={n} onClick={() => setAdesao(n)} className={`h-9 w-9 rounded-lg border text-sm ${adesao === n ? "border-teal-700 bg-teal-50 text-teal-800" : "border-zinc-300"}`}>{n}</button>
+            <button key={n} onClick={() => setAdesao(n)} className={`h-10 w-10 rounded-xl border text-sm ${adesao === n ? "border-marca-700 bg-marca-50 text-marca-800" : "border-zinc-300"}`}>{n}</button>
           ))}
         </div>
       </Campo>

@@ -26,6 +26,7 @@ export type ResultadoRisco = {
 };
 
 const DIA_MS = 24 * 60 * 60 * 1000;
+const fmt = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
 function diasEntre(a: Date, b: Date): number {
   return Math.floor((b.getTime() - a.getTime()) / DIA_MS);
@@ -62,7 +63,7 @@ export function calcularRisco(aluno: DadosAluno, hoje: Date = new Date()): Resul
   if (anteriores >= 1 && recentes < anteriores * 0.5) {
     pontuacao += 25;
     motivos.push(
-      `frequência caiu de ${anteriores.toFixed(1)} para ${recentes.toFixed(1)} treinos por semana`,
+      `frequência caiu de ${fmt(anteriores)} para ${fmt(recentes)} treinos/semana`,
     );
   }
 

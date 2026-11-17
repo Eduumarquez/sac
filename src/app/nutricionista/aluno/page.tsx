@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useBanco } from "@/lib/db";
-import { Abas, BotaoLink, Cartao, Carregando, GraficoLinha, Vazio } from "@/components/ui";
+import { Abas, Cartao, Carregando, GraficoLinha, Vazio } from "@/components/ui";
 import { CabecalhoAluno, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 import { EditorPlanoAlimentar, FormConsulta } from "@/components/editores";
 
@@ -27,14 +28,14 @@ function Detalhe() {
   const adesao = db.consultas.filter((c) => c.alunoId === id && c.adesao).map((c) => ({ x: new Date(c.data), y: c.adesao! }));
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <BotaoLink href="/nutricionista/" variante="secundario">← Meus pacientes</BotaoLink>
+    <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <Link href="/nutricionista/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus pacientes</Link>
       <CabecalhoAluno db={db} alunoId={id} />
       <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }]} />
 
       {aba === "consulta" && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Cartao titulo="Nova consulta" acao={!registrando && <button className="text-sm text-teal-700 hover:underline" onClick={() => setRegistrando(true)}>Registrar</button>}>
+          <Cartao titulo="Nova consulta" acao={!registrando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setRegistrando(true)}>Registrar</button>}>
             {registrando ? <FormConsulta alunoId={id} nutricionistaId={nutriId} aoSalvar={() => setRegistrando(false)} /> : <p className="text-sm text-zinc-500">Registre peso, adesão ao plano, anotações e o próximo retorno.</p>}
           </Cartao>
           <Cartao titulo="Histórico"><HistoricoConsultas db={db} alunoId={id} /></Cartao>
@@ -42,7 +43,7 @@ function Detalhe() {
       )}
 
       {aba === "plano" && (
-        <Cartao titulo={editando ? "Montar plano alimentar" : "Plano atual"} acao={!editando && <button className="text-sm text-teal-700 hover:underline" onClick={() => setEditando(true)}>{plano ? "Editar" : "Criar plano"}</button>}>
+        <Cartao titulo={editando ? "Montar plano alimentar" : "Plano atual"} acao={!editando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setEditando(true)}>{plano ? "Editar" : "Criar plano"}</button>}>
           {editando ? <EditorPlanoAlimentar alunoId={id} nutricionistaId={nutriId} atual={plano} aoSalvar={() => setEditando(false)} /> : <PlanoAlimentarVisual plano={plano} />}
         </Cartao>
       )}

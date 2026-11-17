@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { alterar, useBanco } from "@/lib/db";
 import { statusCobranca } from "@/lib/regras";
 import { formatarData, formatarDinheiro } from "@/lib/datas";
 import type { StatusAluno } from "@/lib/tipos";
-import { Abas, BotaoLink, Campo, Cartao, Carregando, Etiqueta, Vazio, estiloInput } from "@/components/ui";
+import { Abas, Campo, Cartao, Carregando, Etiqueta, Vazio, estiloInput } from "@/components/ui";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 
 type Aba = "geral" | "treino" | "corpo" | "nutricao" | "financeiro";
@@ -23,8 +24,8 @@ function Ficha() {
     alterar((d) => ({ ...d, alunos: d.alunos.map((a) => (a.id === id ? { ...a, [campo]: valor || undefined } : a)) }));
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 px-4 py-8">
-      <BotaoLink href="/painel/" variante="secundario">← Voltar</BotaoLink>
+    <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <Link href="/painel/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Voltar ao painel</Link>
       <CabecalhoAluno db={db} alunoId={id} />
       <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[
         { id: "geral", rotulo: "Visão geral" }, { id: "treino", rotulo: "Treino" }, { id: "corpo", rotulo: "Avaliações" },
