@@ -8,6 +8,7 @@ import { statusCobranca } from "@/lib/regras";
 import { formatarData, formatarDinheiro } from "@/lib/datas";
 import type { StatusAluno } from "@/lib/tipos";
 import { Abas, Campo, Cartao, Carregando, Etiqueta, Vazio, estiloInput } from "@/components/ui";
+import { LinhaDoTempo } from "@/components/equipe";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 
 type Aba = "geral" | "treino" | "corpo" | "nutricao" | "financeiro";
@@ -62,6 +63,7 @@ function Ficha() {
             </div>
           </Cartao>
           <Frequencia db={db} alunoId={id} />
+          <div className="sm:col-span-2"><LinhaDoTempo db={db} alunoId={id} autorId="p-dono" /></div>
         </div>
       )}
 

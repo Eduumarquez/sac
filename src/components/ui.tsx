@@ -305,3 +305,33 @@ export function GraficoLinha({ pontos, unidade, altura = 140, menorEhMelhor }: {
     </div>
   );
 }
+
+/** Barras verticais simples, com o valor em cima e o rótulo embaixo. */
+export function GraficoBarras({ dados, altura = 120, destacarUltimo = true }: { dados: { rotulo: string; valor: number }[]; altura?: number; destacarUltimo?: boolean }) {
+  const max = Math.max(1, ...dados.map((d) => d.valor));
+  return (
+    <div className="flex items-end gap-1.5" style={{ height: altura + 36 }} role="img" aria-label={dados.map((d) => `${d.rotulo}: ${d.valor}`).join(", ")}>
+      {dados.map((d, i) => {
+        const ultimo = destacarUltimo && i === dados.length - 1;
+        return (
+          <div key={d.rotulo + i} className="flex flex-1 flex-col items-center justify-end gap-1">
+            <span className={`text-xs font-medium ${ultimo ? "text-marca-800" : "text-zinc-500"}`}>{d.valor}</span>
+            <div className={`w-full max-w-10 rounded-t-md ${ultimo ? "bg-marca-600" : "bg-marca-200"}`} style={{ height: Math.max(3, (d.valor / max) * altura) }} />
+            <span className="whitespace-nowrap text-[10px] text-zinc-400">{d.rotulo}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Barra horizontal com rótulo e valor, para comparar partes de um todo. */
+export function BarraHorizontal({ rotulo, valor, total, cor = "bg-marca-500", detalhe }: { rotulo: string; valor: number; total: number; cor?: string; detalhe?: ReactNode }) {
+  const pct = total ? Math.round((valor / total) * 100) : 0;
+  return (
+    <div>
+      <div className="mb-1 flex justify-between text-sm"><span className="text-zinc-700">{rotulo}</span><span className="font-medium text-zinc-900">{detalhe ?? valor}</span></div>
+      <div className="h-2 overflow-hidden rounded-full bg-zinc-100"><div className={`h-full rounded-full ${cor}`} style={{ width: `${pct}%` }} /></div>
+    </div>
+  );
+}

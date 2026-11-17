@@ -7,8 +7,9 @@ import { useBanco } from "@/lib/db";
 import { Abas, Cartao, Carregando, Vazio } from "@/components/ui";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 import { EditorTreino, FormAvaliacao } from "@/components/editores";
+import { FeedbacksDoAluno, LinhaDoTempo } from "@/components/equipe";
 
-type Aba = "treino" | "avaliacao" | "evolucao" | "nutricao";
+type Aba = "treino" | "avaliacao" | "evolucao" | "nutricao" | "equipe";
 
 function Detalhe() {
   const db = useBanco();
@@ -27,13 +28,16 @@ function Detalhe() {
     <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
       <Link href="/personal/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus alunos</Link>
       <CabecalhoAluno db={db} alunoId={id} />
-      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "treino", rotulo: "Treino" }, { id: "avaliacao", rotulo: "Avaliação física" }, { id: "evolucao", rotulo: "Evolução" }, { id: "nutricao", rotulo: "Nutrição" }]} />
+      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "treino", rotulo: "Treino" }, { id: "avaliacao", rotulo: "Avaliação física" }, { id: "evolucao", rotulo: "Evolução" }, { id: "nutricao", rotulo: "Nutrição" }, { id: "equipe", rotulo: "Equipe" }]} />
 
       {aba === "treino" && (
         <Cartao titulo={editando ? "Montar treino" : "Treino atual"} acao={!editando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setEditando(true)}>{treino ? "Editar / renovar" : "Montar treino"}</button>}>
           {editando ? <EditorTreino alunoId={id} personalId={personalId} atual={treino} aoSalvar={() => setEditando(false)} /> : <TreinoVisual treino={treino} />}
         </Cartao>
       )}
+      {aba === "treino" && !editando && <FeedbacksDoAluno db={db} alunoId={id} />}
+
+      {aba === "equipe" && <LinhaDoTempo db={db} alunoId={id} autorId={personalId} />}
 
       {aba === "avaliacao" && (
         <>

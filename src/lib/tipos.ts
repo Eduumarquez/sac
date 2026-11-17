@@ -139,6 +139,13 @@ export type ContatoRetencao = {
   resultado: "contatado" | "voltou" | "sem_resposta";
 };
 
+/** Recado deixado por alguém da equipe na ficha do aluno. */
+export type Nota = { id: string; alunoId: string; autorId: string; data: string; texto: string };
+
+/** Como o aluno se sentiu no treino (1 = péssimo, 5 = ótimo). */
+export type Sensacao = 1 | 2 | 3 | 4 | 5;
+export type FeedbackTreino = { id: string; alunoId: string; data: string; divisao: string; sensacao: Sensacao; comentario?: string };
+
 export type BancoDados = {
   versao: 1;
   academia: { nome: string };
@@ -154,4 +161,6 @@ export type BancoDados = {
   planosAlimentares: PlanoAlimentar[];
   consultas: ConsultaNutricional[];
   contatos: ContatoRetencao[];
+  notas: Nota[];
+  feedbacks: FeedbackTreino[];
 };

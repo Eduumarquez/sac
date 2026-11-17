@@ -150,5 +150,19 @@ export function criarBancoDemo(hoje = new Date()): BancoDados {
     checkins: base.flatMap((b) => checkins(b.id, b.dias)),
     cobrancas, treinos, registrosCarga, avaliacoes, planosAlimentares, consultas,
     contatos: [],
+    notas: [
+      { id: novoId(), alunoId: "a4", autorId: "p-rec", data: d(9), texto: "Comentou na recepção que o joelho voltou a doer. Pediu para ver com um personal." },
+      { id: novoId(), alunoId: "a1", autorId: "p-nutri1", data: d(12), texto: "Está com fome no fim da tarde. Coloquei um pré-treino com banana, avisem se ela reclamar de cansaço." },
+      { id: novoId(), alunoId: "a1", autorId: "p-pers1", data: d(8), texto: "Perdeu 3 kg desde a primeira avaliação. Muito motivada com o resultado." },
+      { id: novoId(), alunoId: "a2", autorId: "p-pers2", data: d(30), texto: "Quer focar em braço para o casamento em março." },
+    ],
+    feedbacks: [
+      { id: novoId(), alunoId: "a2", data: d(10), divisao: "C - Pernas", sensacao: 2 as const, comentario: "Treino repetitivo, já faço isso há meses." },
+      { id: novoId(), alunoId: "a2", data: d(3), divisao: "A - Peito e tríceps", sensacao: 1 as const, comentario: "Não estou vendo resultado." },
+      { id: novoId(), alunoId: "a3", data: d(2), divisao: "A - Corpo inteiro", sensacao: 5 as const },
+      { id: novoId(), alunoId: "a3", data: d(1), divisao: "B - Cardio e core", sensacao: 4 as const, comentario: "Puxado mas gostei!" },
+      { id: novoId(), alunoId: "a6", data: d(3), divisao: "A - Corpo inteiro", sensacao: 4 as const },
+      { id: novoId(), alunoId: "a5", data: d(2), divisao: "B - Costas e bíceps", sensacao: 3 as const },
+    ],
   };
 }

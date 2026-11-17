@@ -18,7 +18,7 @@ function carregar(): BancoDados {
   try {
     const salvo = localStorage.getItem(CHAVE);
     if (salvo) {
-      cache = JSON.parse(salvo) as BancoDados;
+      cache = migrar(JSON.parse(salvo) as BancoDados);
       return cache;
     }
   } catch {
@@ -27,6 +27,11 @@ function carregar(): BancoDados {
   cache = criarBancoDemo();
   salvar(cache);
   return cache;
+}
+
+/** Completa coleções que não existiam em versões anteriores do banco salvo. */
+function migrar(db: BancoDados): BancoDados {
+  return { ...db, notas: db.notas ?? [], feedbacks: db.feedbacks ?? [] };
 }
 
 function salvar(db: BancoDados) {

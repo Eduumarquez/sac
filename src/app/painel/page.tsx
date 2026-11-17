@@ -8,9 +8,10 @@ import { mensagemSugerida } from "@/lib/risco";
 import { riscoDoAluno, statusCobranca } from "@/lib/regras";
 import { dataISO, diasEntre, formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { saudacao } from "@/lib/mascaras";
+import { Resultados } from "@/components/Resultados";
 import { Abas, Avatar, BarraProgresso, Botao, CabecalhoPagina, Cartao, Carregando, Etiqueta, EtiquetaRisco, Indicador, Vazio, avisar, estiloInput } from "@/components/ui";
 
-type Aba = "dia" | "alunos" | "financeiro";
+type Aba = "dia" | "alunos" | "financeiro" | "resultados";
 type Filtro = "todos" | "risco" | "novos";
 
 const linkWhats = (tel: string, texto: string) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
@@ -76,7 +77,10 @@ export default function Painel() {
           { id: "dia", rotulo: "Lista do dia", contador: pendentes.length },
           { id: "alunos", rotulo: "Alunos" },
           { id: "financeiro", rotulo: "Financeiro", contador: dados.atrasado.length },
+          { id: "resultados", rotulo: "Resultados" },
         ]} />
+
+        {aba === "resultados" && <Resultados db={db} />}
 
         {aba === "dia" && (
           <div className="space-y-4">

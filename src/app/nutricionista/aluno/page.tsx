@@ -7,8 +7,9 @@ import { useBanco } from "@/lib/db";
 import { Abas, Cartao, Carregando, GraficoLinha, Vazio } from "@/components/ui";
 import { CabecalhoAluno, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 import { EditorPlanoAlimentar, FormConsulta } from "@/components/editores";
+import { LinhaDoTempo } from "@/components/equipe";
 
-type Aba = "consulta" | "plano" | "evolucao" | "treino";
+type Aba = "consulta" | "plano" | "evolucao" | "treino" | "equipe";
 
 function Detalhe() {
   const db = useBanco();
@@ -31,7 +32,9 @@ function Detalhe() {
     <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
       <Link href="/nutricionista/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus pacientes</Link>
       <CabecalhoAluno db={db} alunoId={id} />
-      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }]} />
+      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }, { id: "equipe", rotulo: "Equipe" }]} />
+
+      {aba === "equipe" && <LinhaDoTempo db={db} alunoId={id} autorId={nutriId} />}
 
       {aba === "consulta" && (
         <div className="grid gap-3 sm:grid-cols-2">

@@ -33,7 +33,7 @@ export const telefoneValido = (v: string) => digitos(v).length >= 10;
 export const emailValido = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 export function iniciais(nome: string): string {
-  const p = nome.trim().split(/\s+/);
+  const p = nome.replace(/\(.*?\)/g, "").trim().split(/\s+/).filter(Boolean);
   return ((p[0]?.[0] ?? "") + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
 }
 

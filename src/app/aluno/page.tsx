@@ -8,6 +8,8 @@ import { formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { saudacao } from "@/lib/mascaras";
 import { Abas, BarraProgresso, Cartao, Carregando, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
 import { EvolucaoCargas } from "@/components/aluno";
+import { SENSACOES, emojiSensacao } from "@/components/equipe";
+import type { Sensacao } from "@/lib/tipos";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
 
 type Aba = "treino" | "dieta" | "evolucao" | "conta";
@@ -26,6 +28,8 @@ export default function AppAluno() {
   const [divisaoEscolhida, setDivisao] = useState<number | null>(null);
   const [feitos, setFeitos] = useState<Record<string, boolean>>({});
   const [cargas, setCargas] = useState<Record<string, string>>({});
+  const [sensacao, setSensacao] = useState<Sensacao | null>(null);
+  const [comentario, setComentario] = useState("");
 
   if (!db) return <Carregando />;
   const aluno = db.alunos.find((a) => a.id === id);
@@ -52,6 +56,11 @@ export default function AppAluno() {
     ...db.avaliacoes.filter((a) => a.alunoId === aluno.id).map((a) => ({ x: new Date(a.data), y: a.pesoKg })),
     ...db.consultas.filter((c) => c.alunoId === aluno.id && c.pesoKg).map((c) => ({ x: new Date(c.data), y: c.pesoKg! })),
   ];
+  const feedbackHoje = db.feedbacks.find((f) => f.alunoId === aluno.id && f.data.slice(0, 10) === hojeStr);
+  const treinoConcluido = !!div && qtdFeitos === div.exercicios.length && div.exercicios.length > 0;
+  const checkinHoje = meusCheckins.find((c) => c.data.slice(0, 10) === hojeStr);
+  const treinandoHaTempo = !!checkinHoje && agora.getTime() - new Date(checkinHoje.data).getTime() > 45 * 60_000;
+  const pedirFeedback = !!treino && !feedbackHoje && (treinoConcluido || treinandoHaTempo);
   const horaAgora = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
   const proximaRefeicao = plano?.refeicoes.findIndex((r) => r.horario >= horaAgora) ?? -1;
 
@@ -69,6 +78,13 @@ export default function AppAluno() {
       checkin(true);
       avisar("Treino concluído! 💪");
     }
+  }
+  function enviarFeedback() {
+    if (!sensacao || !div) return;
+    alterar((d) => ({ ...d, feedbacks: [...d.feedbacks, { id: novoId(), alunoId: aluno!.id, data: isoAgora(), divisao: div.nome, sensacao, comentario: comentario.trim() || undefined }] }));
+    setSensacao(null);
+    setComentario("");
+    avisar(personal ? `Obrigado! ${personal.nome.split(" ")[0]} vai ver como foi.` : "Obrigado pelo retorno!");
   }
   function registrar(exercicio: string) {
     const valor = Number((cargas[exercicio] ?? "").replace(",", "."));
@@ -131,6 +147,32 @@ export default function AppAluno() {
                   </button>
                 ))}
               </div>
+              {pedirFeedback && (
+                <section className="animar-entrada rounded-2xl border border-marca-200 bg-marca-50 p-4" aria-label="Avaliar treino">
+                  <p className="font-semibold text-marca-900">Como foi o treino de hoje?</p>
+                  <p className="text-sm text-marca-800/80">{personal ? `${personal.nome.split(" ")[0]} usa sua resposta para ajustar o treino.` : "Sua resposta ajuda a equipe a ajustar o treino."}</p>
+                  <div className="mt-3 grid grid-cols-5 gap-1.5">
+                    {SENSACOES.map((s) => (
+                      <button key={s.valor} onClick={() => setSensacao(s.valor)} aria-pressed={sensacao === s.valor}
+                        className={`flex flex-col items-center gap-1 rounded-xl py-2 text-xs transition ${sensacao === s.valor ? "bg-white font-semibold text-marca-900 shadow-sm ring-2 ring-marca-500" : "text-marca-900/70 hover:bg-white/60"}`}>
+                        <span className="text-2xl leading-none">{s.emoji}</span>{s.rotulo}
+                      </button>
+                    ))}
+                  </div>
+                  {sensacao && (
+                    <div className="mt-3 space-y-2">
+                      <input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder={sensacao <= 2 ? "O que não foi legal? (opcional)" : "Quer comentar algo? (opcional)"}
+                        aria-label="Comentário sobre o treino" className="w-full rounded-xl border border-marca-200 bg-white px-3 py-2.5 text-base focus:border-marca-500 focus:outline-none sm:text-sm" />
+                      <button onClick={enviarFeedback} className="w-full rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white hover:bg-marca-800">Enviar</button>
+                    </div>
+                  )}
+                </section>
+              )}
+              {feedbackHoje && (
+                <p className="rounded-2xl bg-white p-3 text-sm text-zinc-600 ring-1 ring-zinc-200">
+                  <span className="mr-1 text-lg">{emojiSensacao(feedbackHoje.sensacao)}</span> Você avaliou o treino de hoje. Obrigado!
+                </p>
+              )}
               <Cartao>
                 <BarraProgresso valor={qtdFeitos} total={div?.exercicios.length ?? 0} rotulo="Exercícios feitos" />
                 <ul className="mt-3 divide-y divide-zinc-100">

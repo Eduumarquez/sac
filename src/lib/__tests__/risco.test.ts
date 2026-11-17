@@ -41,4 +41,16 @@ describe("calcularRisco", () => {
     );
     expect(r.pontuacao).toBeLessThanOrEqual(100);
   });
+
+  it("dois treinos ruins seguidos viram motivo de risco", () => {
+    const base = {
+      matriculadoEm: diasAtras(300),
+      checkins: [1, 3, 5, 8, 10, 12, 15, 17, 19, 22, 24, 26, 29, 31, 33, 36, 38, 40].map(diasAtras),
+      diasAtrasoPagamento: 0,
+      treinoAtualCriadoEm: diasAtras(20),
+    };
+    expect(calcularRisco({ ...base, sensacoesRecentes: [1, 2, 5] }, hoje).motivos).toContain("não está gostando dos treinos");
+    expect(calcularRisco({ ...base, sensacoesRecentes: [2, 4] }, hoje).motivos).not.toContain("não está gostando dos treinos");
+    expect(calcularRisco({ ...base, sensacoesRecentes: [1] }, hoje).motivos).toEqual([]);
+  });
 });

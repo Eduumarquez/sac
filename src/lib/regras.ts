@@ -64,6 +64,10 @@ export function riscoDoAluno(db: BancoDados, alunoId: string, hoje = new Date())
       checkins,
       diasAtrasoPagamento: atrasadas.length ? Math.max(...atrasadas) : 0,
       treinoAtualCriadoEm: treino ? new Date(treino.criadoEm) : null,
+      sensacoesRecentes: (db.feedbacks ?? [])
+        .filter((f) => f.alunoId === alunoId)
+        .sort((a, b) => b.data.localeCompare(a.data))
+        .map((f) => f.sensacao),
     },
     hoje,
   );

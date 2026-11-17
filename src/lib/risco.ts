@@ -15,6 +15,8 @@ export type DadosAluno = {
   diasAtrasoPagamento: number;
   /** Data em que o treino atual foi criado (null se não tem treino) */
   treinoAtualCriadoEm: Date | null;
+  /** Notas de 1 a 5 dos últimos treinos, do mais recente para o mais antigo */
+  sensacoesRecentes?: number[];
 };
 
 export type NivelRisco = "baixo" | "medio" | "alto";
@@ -95,6 +97,13 @@ export function calcularRisco(aluno: DadosAluno, hoje: Date = new Date()): Resul
     }
   }
 
+  // 6. Não está gostando dos treinos: média das 2 últimas avaliações até 2
+  const ultimas = (aluno.sensacoesRecentes ?? []).slice(0, 2);
+  if (ultimas.length === 2 && (ultimas[0] + ultimas[1]) / 2 <= 2) {
+    pontuacao += 15;
+    motivos.push("não está gostando dos treinos");
+  }
+
   pontuacao = Math.min(100, pontuacao);
   const nivel: NivelRisco = pontuacao >= 50 ? "alto" : pontuacao >= 25 ? "medio" : "baixo";
   return { pontuacao, nivel, motivos };
@@ -102,6 +111,9 @@ export function calcularRisco(aluno: DadosAluno, hoje: Date = new Date()): Resul
 
 /** Mensagem curta e humana para o professor mandar no WhatsApp. */
 export function mensagemSugerida(primeiroNome: string, risco: ResultadoRisco): string {
+  if (risco.motivos.some((m) => m.includes("gostando"))) {
+    return `Oi ${primeiroNome}! Vi que os últimos treinos não foram legais. Me conta o que está pegando? Quero ajustar para ficar do seu jeito.`;
+  }
   if (risco.motivos.some((m) => m.includes("sem treinar"))) {
     return `Oi ${primeiroNome}! Senti sua falta aqui na academia. Tá tudo bem? Quer que eu ajuste seu treino para encaixar melhor na sua rotina?`;
   }
