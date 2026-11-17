@@ -4,11 +4,16 @@ import { ChevronDown } from "lucide-react";
 import { definirPerfil, usePerfil, type TipoPerfil } from "@/lib/db";
 import { Avatar } from "./ui";
 
-/** Login de demonstração: mostra quem está usando a tela e permite trocar. */
+import { useSessao } from "@/lib/sessao";
+
+/** Só na demonstração completa: mostra quem está usando a tela e permite trocar. */
 export function SeletorPessoa({ opcoes, tipo, rotulo }: { opcoes: { id: string; nome: string }[]; tipo: TipoPerfil; rotulo: string }) {
   const escolhido = usePerfil(tipo);
+  const sessao = useSessao();
   const atual = opcoes.find((o) => o.id === escolhido) ?? opcoes[0];
   if (!atual) return null;
+  // Fora da demonstração completa, cada um entra como ele mesmo: não dá para trocar de pessoa.
+  if (sessao?.papel !== "demo") return null;
   return (
     <label className="relative inline-flex cursor-pointer items-center gap-2 rounded-full border border-zinc-200 bg-white py-1 pl-1 pr-3 text-sm shadow-sm hover:border-zinc-300">
       <Avatar nome={atual.nome} tamanho="sm" />

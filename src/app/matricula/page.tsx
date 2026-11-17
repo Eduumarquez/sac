@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Apple, Barcode, Check, CreditCard, Dumbbell, PartyPopper, QrCode, ShieldCheck, TriangleAlert } from "lucide-react";
 import { alterar, definirPerfil, useBanco } from "@/lib/db";
+import { entrar, useSessao } from "@/lib/sessao";
 import { PERGUNTAS_PARQ, gerarCobrancas, precisaAtestado, profissionalMenosOcupado } from "@/lib/regras";
 import { formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { cpfValido, emailValido, mascaraCPF, mascaraTelefone, telefoneValido } from "@/lib/mascaras";
@@ -35,6 +36,7 @@ const VAZIO: Form = {
 
 export default function Matricula() {
   const db = useBanco();
+  const sessaoAtual = useSessao();
   const [passo, setPasso] = useState(0);
   const [tentou, setTentou] = useState(false);
   const [concluido, setConcluido] = useState<Aluno | null>(null);
@@ -87,6 +89,7 @@ export default function Matricula() {
       cobrancas: [...d.cobrancas, ...cobrancas],
     }));
     definirPerfil({ tipo: "aluno", id: aluno.id });
+    if (!sessaoAtual) entrar({ papel: "aluno", id: aluno.id, nome: aluno.nome });
     setConcluido(aluno);
     window.scrollTo({ top: 0 });
   }
@@ -114,7 +117,9 @@ export default function Matricula() {
           </div>
 
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
-            <BotaoLink href="/aluno/">Abrir meu app</BotaoLink>
+            {sessaoAtual && sessaoAtual.papel !== "demo" && sessaoAtual.papel !== "aluno"
+              ? <BotaoLink href={`/painel/aluno/?id=${concluido.id}`}>Abrir a ficha do aluno</BotaoLink>
+              : <BotaoLink href="/aluno/">Abrir meu app</BotaoLink>}
             <Botao variante="secundario" onClick={() => { setConcluido(null); setPasso(0); setF(VAZIO); }}>Nova matrícula</Botao>
           </div>
         </Cartao>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Apple, ArrowRight, Building2, ClipboardSignature, Dumbbell, HeartHandshake, Smartphone } from "lucide-react";
+import { Apple, ArrowRight, LogIn, Building2, ClipboardSignature, Dumbbell, HeartHandshake, Smartphone } from "lucide-react";
 
 const PERFIS = [
   { href: "/aluno/", titulo: "Sou aluno", texto: "Faça check-in, veja o treino do dia, registre cargas e acompanhe sua evolução.", icone: Smartphone, destaque: true },
@@ -33,8 +33,8 @@ export default function Inicio() {
           <Link href="/matricula/" className="inline-flex items-center gap-2 rounded-xl bg-marca-700 px-5 py-3 font-medium text-white shadow-sm hover:bg-marca-800">
             <ClipboardSignature size={18} /> Fazer uma matrícula
           </Link>
-          <Link href="/painel/" className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-5 py-3 font-medium text-zinc-800 hover:bg-zinc-50">
-            Ver o painel da academia
+          <Link href="/entrar/" className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-5 py-3 font-medium text-zinc-800 hover:bg-zinc-50">
+            <LogIn size={18} /> Entrar
           </Link>
         </div>
       </section>
@@ -42,7 +42,7 @@ export default function Inicio() {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Como você quer entrar?</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {PERFIS.map((p) => (
-          <Link key={p.href} href={p.href} className={`group flex gap-4 rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${p.destaque ? "border-marca-200" : "border-zinc-200/80"}`}>
+          <Link key={p.href} href={`/entrar/?volta=${encodeURIComponent(p.href)}`} className={`group flex gap-4 rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${p.destaque ? "border-marca-200" : "border-zinc-200/80"}`}>
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-marca-50 text-marca-700">
               <p.icone size={24} />
             </span>
@@ -69,7 +69,7 @@ export default function Inicio() {
       </ol>
 
       <p className="mt-10 text-center text-sm text-zinc-400">
-        Modo demonstração: os dados ficam salvos só neste navegador.
+        Modo demonstração: os dados ficam salvos só neste navegador. Na tela de entrar há contas de teste de cada perfil.
       </p>
     </main>
   );

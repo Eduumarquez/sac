@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cabecalho } from "@/components/Cabecalho";
 import { Avisos } from "@/components/ui";
+import { Guarda } from "@/components/Guarda";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-screen bg-zinc-50 text-zinc-900">
         <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-3 focus:py-2">Pular para o conteúdo</a>
         <Cabecalho />
-        <div id="conteudo">{children}</div>
+        <div id="conteudo"><Guarda>{children}</Guarda></div>
         <Avisos />
       </body>
     </html>
