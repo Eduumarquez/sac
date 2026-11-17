@@ -28,7 +28,8 @@ export function Cabecalho() {
     <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4">
         <Link href="/" className="flex items-center gap-2 font-bold text-zinc-900">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-marca-700 text-sm text-white">S</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.jpg`} alt="Nova Era" width={64} height={44} className="h-11 w-16 rounded-lg object-cover" />
           <span className="hidden sm:inline">SAC</span>
         </Link>
 
