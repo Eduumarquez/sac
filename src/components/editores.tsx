@@ -59,6 +59,7 @@ export function FormAvaliacao({ alunoId, personalId, alturaAnterior, aoSalvar }:
   const [v, setV] = useState<Record<string, string>>({ altura: alturaAnterior ? String(alturaAnterior) : "" });
   const n = (k: string) => (v[k] ? Number(v[k].replace(",", ".")) : undefined);
   const valido = !!n("peso") && !!n("altura");
+  const bio: [string, string][] = [["magra", "Massa magra (kg)"], ["muscular", "Massa muscular (kg)"], ["agua", "Água corporal (%)"], ["visceral", "Gordura visceral (nível)"], ["tmb", "Metabolismo basal (kcal)"]];
   const campos: [string, string][] = [["peso", "Peso (kg)"], ["altura", "Altura (cm)"], ["gordura", "Gordura (%)"], ["cintura", "Cintura (cm)"], ["quadril", "Quadril (cm)"], ["braco", "Braço (cm)"], ["coxa", "Coxa (cm)"]];
   function salvar() {
     alterar((db) => ({
@@ -66,6 +67,8 @@ export function FormAvaliacao({ alunoId, personalId, alturaAnterior, aoSalvar }:
       avaliacoes: [...db.avaliacoes, {
         id: novoId(), alunoId, personalId, data: isoAgora(), pesoKg: n("peso")!, alturaCm: n("altura")!, gorduraPct: n("gordura"),
         cinturaCm: n("cintura"), quadrilCm: n("quadril"), bracoCm: n("braco"), coxaCm: n("coxa"), observacoes: v.obs,
+        massaMagraKg: n("magra"), massaMuscularKg: n("muscular"), aguaPct: n("agua"), gorduraVisceral: n("visceral"), metabolismoBasalKcal: n("tmb"),
+        origem: bio.some(([k]) => v[k]) ? "bioimpedancia" : "manual",
       }],
     }));
     avisar("Avaliação registrada");
@@ -78,6 +81,15 @@ export function FormAvaliacao({ alunoId, personalId, alturaAnterior, aoSalvar }:
           <Campo key={k} rotulo={r}><input className={estiloInput} inputMode="decimal" value={v[k] ?? ""} onChange={(e) => setV({ ...v, [k]: e.target.value })} /></Campo>
         ))}
       </div>
+      <details className="rounded-xl border border-zinc-200 p-3" open={bio.some(([k]) => v[k])}>
+        <summary className="cursor-pointer text-sm font-medium text-zinc-700">Bioimpedância (opcional)</summary>
+        <p className="mt-1 text-xs text-zinc-500">Copie os valores do relatório da balança (InBody, Tanita, Omron ou outra). O aluno vê a composição corporal no app.</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {bio.map(([k, r]) => (
+            <Campo key={k} rotulo={r}><input className={estiloInput} inputMode="decimal" value={v[k] ?? ""} onChange={(e) => setV({ ...v, [k]: e.target.value })} /></Campo>
+          ))}
+        </div>
+      </details>
       <Campo rotulo="Observações"><textarea className={estiloInput} rows={2} value={v.obs ?? ""} onChange={(e) => setV({ ...v, obs: e.target.value })} /></Campo>
       <Botao disabled={!valido} onClick={salvar}>Salvar avaliação</Botao>
     </div>

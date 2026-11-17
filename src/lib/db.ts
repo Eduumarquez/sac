@@ -38,6 +38,9 @@ function migrar(db: BancoDados): BancoDados {
     metas: db.metas ?? novo.metas, cancelamentos: db.cancelamentos ?? [],
     aulas: db.aulas ?? novo.aulas, agendamentos: db.agendamentos ?? novo.agendamentos,
     acessos: db.acessos ?? [], lembretes: db.lembretes ?? [],
+    produtos: db.produtos ?? novo.produtos, vendas: db.vendas ?? [], creditos: db.creditos ?? novo.creditos,
+    exames: db.exames ?? novo.exames, encaminhamentos: db.encaminhamentos ?? novo.encaminhamentos,
+    profissionais: db.profissionais.some((p) => p.papel === "fisioterapeuta") ? db.profissionais : [...db.profissionais, ...novo.profissionais.filter((p) => p.papel === "fisioterapeuta")],
     planos: db.planos.some((p) => p.agregador) ? db.planos : [...db.planos, ...novo.planos.filter((p) => p.agregador)],
   };
 }
@@ -86,7 +89,7 @@ export function useBanco(): BancoDados | null {
 // ---------- pessoa em uso (login de demonstração), uma por tipo ----------
 
 const CHAVE_PERFIL = "sac-perfil-v2";
-export type TipoPerfil = "personal" | "nutricionista" | "aluno";
+export type TipoPerfil = "personal" | "nutricionista" | "fisioterapeuta" | "aluno";
 const ouvintesPerfil = new Set<() => void>();
 let perfilCache: string | undefined;
 

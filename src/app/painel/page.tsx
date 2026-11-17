@@ -12,10 +12,11 @@ import { Resultados } from "@/components/Resultados";
 import { CartaoDinheiroSalvo } from "@/components/retencao";
 import { ReguaCobranca } from "@/components/cobranca";
 import { AgendaEquipe } from "@/components/agenda";
+import { PainelLoja } from "@/components/loja";
 import { lembretesDeHoje } from "@/lib/regras";
 import { Abas, Avatar, BarraProgresso, Botao, CabecalhoPagina, Cartao, Carregando, Etiqueta, EtiquetaRisco, Indicador, Vazio, avisar, estiloInput } from "@/components/ui";
 
-type Aba = "dia" | "alunos" | "agenda" | "financeiro" | "resultados";
+type Aba = "dia" | "alunos" | "agenda" | "financeiro" | "loja" | "resultados";
 type Filtro = "todos" | "risco" | "novos";
 
 const linkWhats = (tel: string, texto: string) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
@@ -83,10 +84,12 @@ export default function Painel() {
           { id: "alunos", rotulo: "Alunos" },
           { id: "agenda", rotulo: "Agenda" },
           { id: "financeiro", rotulo: "Financeiro", contador: lembretesDeHoje(db).length },
+          { id: "loja", rotulo: "Loja" },
           { id: "resultados", rotulo: "Resultados" },
         ]} />
 
         {aba === "resultados" && <Resultados db={db} />}
+        {aba === "loja" && <PainelLoja db={db} />}
         {aba === "agenda" && <AgendaEquipe db={db} titulo="Agenda da academia" />}
 
         {aba === "dia" && (

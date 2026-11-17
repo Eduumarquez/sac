@@ -10,6 +10,8 @@ import { EditorTreino, FormAvaliacao } from "@/components/editores";
 import { FeedbacksDoAluno, LinhaDoTempo } from "@/components/equipe";
 import { MetaAluno } from "@/components/meta";
 import { AgendarAtendimento } from "@/components/agenda";
+import { SessoesDoAluno } from "@/components/loja";
+import { EncaminharFisio } from "@/components/saude";
 
 type Aba = "treino" | "avaliacao" | "evolucao" | "nutricao" | "equipe";
 
@@ -39,6 +41,7 @@ function Detalhe() {
         </Cartao>
       )}
       {aba === "treino" && !editando && <FeedbacksDoAluno db={db} alunoId={id} />}
+      {aba === "treino" && !editando && <SessoesDoAluno db={db} alunoId={id} papel="personal" />}
 
       {aba === "equipe" && <LinhaDoTempo db={db} alunoId={id} autorId={personalId} />}
 
@@ -47,7 +50,10 @@ function Detalhe() {
           <Cartao titulo="Nova avaliação" acao={!avaliando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setAvaliando(true)}>Registrar</button>}>
             {avaliando ? <FormAvaliacao alunoId={id} personalId={personalId} alturaAnterior={ultimaAltura} aoSalvar={() => setAvaliando(false)} /> : <p className="text-sm text-zinc-500">Registre peso, medidas e percentual de gordura. O aluno vê a evolução no app.</p>}
           </Cartao>
-          <AgendarAtendimento db={db} alunoId={id} profissionalId={personalId} tipo="avaliacao" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AgendarAtendimento db={db} alunoId={id} profissionalId={personalId} tipo="avaliacao" />
+            <EncaminharFisio db={db} alunoId={id} deId={personalId} />
+          </div>
           <EvolucaoCorporal db={db} alunoId={id} />
         </>
       )}

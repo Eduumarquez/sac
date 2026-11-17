@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Apple, CalendarDays, Check, CircleUser, Dumbbell, Flame, LineChart, MapPin, QrCode, Target } from "lucide-react";
+import { Apple, CalendarDays, Check, ShoppingBag, Dumbbell, Flame, Home, LineChart, MapPin, QrCode, Target } from "lucide-react";
 import { alterar, useBanco } from "@/lib/db";
 import { sequenciaSemanas, statusCobranca } from "@/lib/regras";
 import { formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { saudacao } from "@/lib/mascaras";
-import { Abas, BarraProgresso, Cartao, Carregando, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
-import { EvolucaoCargas } from "@/components/aluno";
+import { Abas, Cartao, Carregando, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
+import { ComposicaoCorporal, EvolucaoCargas } from "@/components/aluno";
+import { ExamesAluno } from "@/components/saude";
+import { SessaoTreino } from "@/components/treino";
+import { LojaAluno } from "@/components/loja";
+import { TREINOS_FORA } from "@/lib/exercicios";
 import { SENSACOES, emojiSensacao } from "@/components/equipe";
 import { AgendaDoAluno } from "@/components/agenda";
 import { Modal, PagarPix, QR } from "@/components/cobranca";
@@ -23,7 +27,7 @@ const ABAS: { id: Aba; rotulo: string; icone: typeof Dumbbell }[] = [
   { id: "agenda", rotulo: "Agenda", icone: CalendarDays },
   { id: "dieta", rotulo: "Dieta", icone: Apple },
   { id: "evolucao", rotulo: "Evolução", icone: LineChart },
-  { id: "conta", rotulo: "Conta", icone: CircleUser },
+  { id: "conta", rotulo: "Loja e conta", icone: ShoppingBag },
 ];
 
 export default function AppAluno() {
@@ -32,8 +36,9 @@ export default function AppAluno() {
   const id = usePessoaSelecionada(alunos, "aluno");
   const [aba, setAba] = useState<Aba>("treino");
   const [divisaoEscolhida, setDivisao] = useState<number | null>(null);
-  const [feitos, setFeitos] = useState<Record<string, boolean>>({});
-  const [cargas, setCargas] = useState<Record<string, string>>({});
+  const [local, setLocal] = useState<"academia" | "casa" | "viagem">("academia");
+  const [concluiu, setConcluiu] = useState(false);
+  const [subConta, setSubConta] = useState<"loja" | "conta">("loja");
   const [sensacao, setSensacao] = useState<Sensacao | null>(null);
   const [comentario, setComentario] = useState("");
   const [verQR, setVerQR] = useState(false);
@@ -55,8 +60,6 @@ export default function AppAluno() {
   const sugerida = treino ? (meusCheckins.length - (fezCheckin ? 1 : 0)) % treino.divisoes.length : 0;
   const divisao = divisaoEscolhida ?? sugerida;
   const div = treino?.divisoes[Math.min(divisao, (treino?.divisoes.length ?? 1) - 1)];
-  const chave = (ex: string) => `${hojeStr}|${div?.nome}|${ex}`;
-  const qtdFeitos = div?.exercicios.filter((e) => feitos[chave(e.exercicio)]).length ?? 0;
   const personal = db.profissionais.find((p) => p.id === aluno.personalId);
   const nutri = db.profissionais.find((p) => p.id === aluno.nutricionistaId);
   const plano = db.planosAlimentares.find((p) => p.alunoId === aluno.id && p.ativo);
@@ -66,7 +69,7 @@ export default function AppAluno() {
     ...db.consultas.filter((c) => c.alunoId === aluno.id && c.pesoKg).map((c) => ({ x: new Date(c.data), y: c.pesoKg! })),
   ];
   const feedbackHoje = db.feedbacks.find((f) => f.alunoId === aluno.id && f.data.slice(0, 10) === hojeStr);
-  const treinoConcluido = !!div && qtdFeitos === div.exercicios.length && div.exercicios.length > 0;
+  const treinoConcluido = concluiu;
   const checkinHoje = meusCheckins.find((c) => c.data.slice(0, 10) === hojeStr);
   const treinandoHaTempo = !!checkinHoje && agora.getTime() - new Date(checkinHoje.data).getTime() > 45 * 60_000;
   const pedirFeedback = !!treino && !feedbackHoje && (treinoConcluido || treinandoHaTempo);
@@ -79,16 +82,6 @@ export default function AppAluno() {
     alterar((d) => ({ ...d, checkins: [...d.checkins, { id: novoId(), alunoId: aluno!.id, data: isoAgora() }] }));
     if (!silencioso) avisar("Check-in feito. Bom treino!");
   }
-  function alternarFeito(ex: string) {
-    const novo = { ...feitos, [chave(ex)]: !feitos[chave(ex)] };
-    setFeitos(novo);
-    const total = div?.exercicios.length ?? 0;
-    const agoraFeitos = div?.exercicios.filter((e) => novo[chave(e.exercicio)]).length ?? 0;
-    if (agoraFeitos === total && total > 0) {
-      checkin(true);
-      avisar("Treino concluído! 💪");
-    }
-  }
   function enviarFeedback() {
     if (!sensacao || !div) return;
     alterar((d) => ({ ...d, feedbacks: [...d.feedbacks, { id: novoId(), alunoId: aluno!.id, data: isoAgora(), divisao: div.nome, sensacao, comentario: comentario.trim() || undefined }] }));
@@ -96,11 +89,8 @@ export default function AppAluno() {
     setComentario("");
     avisar(personal ? `Obrigado! ${personal.nome.split(" ")[0]} vai ver como foi.` : "Obrigado pelo retorno!");
   }
-  function registrar(exercicio: string) {
-    const valor = Number((cargas[exercicio] ?? "").replace(",", "."));
-    if (!valor) return;
+  function registrar(exercicio: string, valor: number) {
     alterar((d) => ({ ...d, registrosCarga: [...d.registrosCarga, { id: novoId(), alunoId: aluno!.id, exercicio, cargaKg: valor, repeticoes: 0, data: isoAgora() }] }));
-    setCargas({ ...cargas, [exercicio]: "" });
     avisar(`${valor} kg registrado em ${exercicio}`);
   }
 
@@ -153,85 +143,70 @@ export default function AppAluno() {
 
       <div className="mt-5 sm:mt-0" key={aba}>
         {aba === "treino" && (
-          !treino ? (
-            <Vazio icone={<Dumbbell size={28} />}>{personal ? `${personal.nome} está montando seu treino. Você recebe um aviso quando estiver pronto.` : "O professor do salão vai montar seu treino na sua primeira visita."}</Vazio>
-          ) : (
-            <div className="animar-entrada space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Treino de hoje</h2>
-                {personal && <span className="text-xs text-zinc-500">por {personal.nome}</span>}
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {treino.divisoes.map((d, i) => (
-                  <button key={d.nome} onClick={() => setDivisao(i)} aria-pressed={i === divisao}
-                    className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${i === divisao ? "bg-marca-700 text-white shadow-sm" : "bg-white text-zinc-600 ring-1 ring-zinc-200"}`}>
-                    {d.nome}{i === sugerida && divisaoEscolhida === null ? " · sugerido" : ""}
-                  </button>
+          <div className="animar-entrada space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Treino de hoje</h2>
+              <div className="flex gap-0.5 rounded-xl bg-zinc-100 p-0.5 text-xs" role="group" aria-label="Onde vai treinar">
+                {([["academia", "Academia"], ["casa", "Em casa"], ["viagem", "Viagem"]] as const).map(([v, r]) => (
+                  <button key={v} onClick={() => setLocal(v)} aria-pressed={local === v} className={`rounded-lg px-2.5 py-1.5 ${local === v ? "bg-white font-semibold shadow-sm" : "text-zinc-500"}`}>{r}</button>
                 ))}
               </div>
-              {pedirFeedback && (
-                <section className="animar-entrada rounded-2xl border border-marca-200 bg-marca-50 p-4" aria-label="Avaliar treino">
-                  <p className="font-semibold text-marca-900">Como foi o treino de hoje?</p>
-                  <p className="text-sm text-marca-800/80">{personal ? `${personal.nome.split(" ")[0]} usa sua resposta para ajustar o treino.` : "Sua resposta ajuda a equipe a ajustar o treino."}</p>
-                  <div className="mt-3 grid grid-cols-5 gap-1.5">
-                    {SENSACOES.map((s) => (
-                      <button key={s.valor} onClick={() => setSensacao(s.valor)} aria-pressed={sensacao === s.valor}
-                        className={`flex flex-col items-center gap-1 rounded-xl py-2 text-xs transition ${sensacao === s.valor ? "bg-white font-semibold text-marca-900 shadow-sm ring-2 ring-marca-500" : "text-marca-900/70 hover:bg-white/60"}`}>
-                        <span className="text-2xl leading-none">{s.emoji}</span>{s.rotulo}
-                      </button>
-                    ))}
-                  </div>
-                  {sensacao && (
-                    <div className="mt-3 space-y-2">
-                      <input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder={sensacao <= 2 ? "O que não foi legal? (opcional)" : "Quer comentar algo? (opcional)"}
-                        aria-label="Comentário sobre o treino" className="w-full rounded-xl border border-marca-200 bg-white px-3 py-2.5 text-base focus:border-marca-500 focus:outline-none sm:text-sm" />
-                      <button onClick={enviarFeedback} className="w-full rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white hover:bg-marca-800">Enviar</button>
-                    </div>
-                  )}
-                </section>
-              )}
-              {feedbackHoje && (
-                <p className="rounded-2xl bg-white p-3 text-sm text-zinc-600 ring-1 ring-zinc-200">
-                  <span className="mr-1 text-lg">{emojiSensacao(feedbackHoje.sensacao)}</span> Você avaliou o treino de hoje. Obrigado!
-                </p>
-              )}
-              <Cartao>
-                <BarraProgresso valor={qtdFeitos} total={div?.exercicios.length ?? 0} rotulo="Exercícios feitos" />
-                <ul className="mt-3 divide-y divide-zinc-100">
-                  {div?.exercicios.map((e) => {
-                    const feito = !!feitos[chave(e.exercicio)];
-                    const ultima = db.registrosCarga.filter((r) => r.alunoId === aluno.id && r.exercicio === e.exercicio).sort((a, b) => b.data.localeCompare(a.data))[0];
-                    return (
-                      <li key={e.exercicio} className="py-3">
-                        <div className="flex items-start gap-3">
-                          <button onClick={() => alternarFeito(e.exercicio)} aria-pressed={feito} aria-label={`Marcar ${e.exercicio} como feito`}
-                            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition ${feito ? "border-marca-600 bg-marca-600 text-white" : "border-zinc-300 hover:border-marca-500"}`}>
-                            {feito && <Check size={16} />}
-                          </button>
-                          <div className="min-w-0 flex-1">
-                            <p className={`font-medium ${feito ? "text-zinc-400 line-through" : "text-zinc-900"}`}>{e.exercicio}</p>
-                            <p className="text-sm text-zinc-500">
-                              {e.series} séries × {e.repeticoes}
-                              {(ultima?.cargaKg ?? e.cargaKg) != null && <> · <strong className="text-zinc-700">{ultima?.cargaKg ?? e.cargaKg} kg</strong></>}
-                            </p>
-                            {e.cargaKg != null && !feito && (
-                              <div className="mt-2 flex items-center gap-2">
-                                <input inputMode="decimal" aria-label={`Nova carga em ${e.exercicio}`} placeholder="Nova carga" value={cargas[e.exercicio] ?? ""}
-                                  onChange={(ev) => setCargas({ ...cargas, [e.exercicio]: ev.target.value })}
-                                  className="w-28 rounded-lg border border-zinc-300 px-2.5 py-1.5 text-base focus:border-marca-500 focus:outline-none sm:text-sm" />
-                                <span className="text-sm text-zinc-400">kg</span>
-                                {cargas[e.exercicio] && <button onClick={() => registrar(e.exercicio)} className="rounded-lg bg-marca-50 px-3 py-1.5 text-sm font-medium text-marca-800">Salvar</button>}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </Cartao>
             </div>
-          )
+            {local !== "academia" ? (() => {
+              const fora = TREINOS_FORA.find((t) => t.id === local)!;
+              return (
+                <>
+                  <p className="flex items-center gap-2 rounded-2xl bg-sky-50 p-3 text-sm text-sky-900"><Home size={18} /> {fora.descricao}. Toque no exercício para ver como fazer.</p>
+                  <SessaoTreino key={local + hojeStr} divisao={fora.divisao} ultimasCargas={[]} comCarga={false}
+                    aoConcluir={() => avisar(`Treino ${local === "casa" ? "em casa" : "de viagem"} concluído! 💪`)} />
+                </>
+              );
+            })() : !treino || !div ? (
+              <Vazio icone={<Dumbbell size={28} />}>{personal ? `${personal.nome} está montando seu treino. Enquanto isso, use o treino Em casa.` : "O professor do salão vai montar seu treino na sua primeira visita. Enquanto isso, use o treino Em casa."}</Vazio>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {treino.divisoes.map((d, i) => (
+                    <button key={d.nome} onClick={() => setDivisao(i)} aria-pressed={i === divisao}
+                      className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${i === divisao ? "bg-marca-700 text-white shadow-sm" : "bg-white text-zinc-600 ring-1 ring-zinc-200"}`}>
+                      {d.nome}{i === sugerida && divisaoEscolhida === null ? " · sugerido" : ""}
+                    </button>
+                  ))}
+                </div>
+                {personal && <p className="text-xs text-zinc-500">Treino montado por {personal.nome}. Marque cada série: o descanso começa sozinho.</p>}
+              {pedirFeedback && (
+                  <section className="animar-entrada rounded-2xl border border-marca-200 bg-marca-50 p-4" aria-label="Avaliar treino">
+                    <p className="font-semibold text-marca-900">Como foi o treino de hoje?</p>
+                    <p className="text-sm text-marca-800/80">{personal ? `${personal.nome.split(" ")[0]} usa sua resposta para ajustar o treino.` : "Sua resposta ajuda a equipe a ajustar o treino."}</p>
+                    <div className="mt-3 grid grid-cols-5 gap-1.5">
+                      {SENSACOES.map((s) => (
+                        <button key={s.valor} onClick={() => setSensacao(s.valor)} aria-pressed={sensacao === s.valor}
+                          className={`flex flex-col items-center gap-1 rounded-xl py-2 text-xs transition ${sensacao === s.valor ? "bg-white font-semibold text-marca-900 shadow-sm ring-2 ring-marca-500" : "text-marca-900/70 hover:bg-white/60"}`}>
+                          <span className="text-2xl leading-none">{s.emoji}</span>{s.rotulo}
+                        </button>
+                      ))}
+                    </div>
+                    {sensacao && (
+                      <div className="mt-3 space-y-2">
+                        <input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder={sensacao <= 2 ? "O que não foi legal? (opcional)" : "Quer comentar algo? (opcional)"}
+                          aria-label="Comentário sobre o treino" className="w-full rounded-xl border border-marca-200 bg-white px-3 py-2.5 text-base focus:border-marca-500 focus:outline-none sm:text-sm" />
+                        <button onClick={enviarFeedback} className="w-full rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white hover:bg-marca-800">Enviar</button>
+                      </div>
+                    )}
+                  </section>
+                )}
+                {feedbackHoje && (
+                  <p className="rounded-2xl bg-white p-3 text-sm text-zinc-600 ring-1 ring-zinc-200">
+                    <span className="mr-1 text-lg">{emojiSensacao(feedbackHoje.sensacao)}</span> Você avaliou o treino de hoje. Obrigado!
+                  </p>
+                )}
+                <SessaoTreino key={div.nome + hojeStr} divisao={div} comCarga
+                  ultimasCargas={db.registrosCarga.filter((r) => r.alunoId === aluno.id)}
+                  aoRegistrarCarga={registrar}
+                  aoConcluir={() => { setConcluiu(true); checkin(true); avisar("Treino concluído! 💪"); }} />
+              </>
+            )}
+          </div>
         )}
 
         {aba === "agenda" && <AgendaDoAluno db={db} alunoId={aluno.id} />}
@@ -279,11 +254,21 @@ export default function AppAluno() {
         {aba === "evolucao" && (
           <div className="animar-entrada space-y-3">
             <Cartao titulo="Meu peso"><GraficoLinha pontos={pesos} unidade="kg" menorEhMelhor={aluno.objetivo === "emagrecimento"} /></Cartao>
+            <ComposicaoCorporal db={db} alunoId={aluno.id} />
             <EvolucaoCargas db={db} alunoId={aluno.id} />
+            <ExamesAluno db={db} alunoId={aluno.id} quem="aluno" />
           </div>
         )}
 
         {aba === "conta" && (
+          <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1" role="group" aria-label="Conta ou loja">
+            {([["loja", "Loja"], ["conta", "Minha conta"]] as const).map(([v, r]) => (
+              <button key={v} onClick={() => setSubConta(v)} aria-pressed={subConta === v} className={`rounded-lg py-2 text-sm ${subConta === v ? "bg-white font-semibold shadow-sm" : "text-zinc-500"}`}>{r}</button>
+            ))}
+          </div>
+        )}
+        {aba === "conta" && subConta === "loja" && <div className="animar-entrada"><LojaAluno db={db} alunoId={aluno.id} /></div>}
+        {aba === "conta" && subConta === "conta" && (
           <div className="animar-entrada space-y-3">
             <Cartao titulo="Mensalidades">
               <ul className="divide-y divide-zinc-100 text-sm">

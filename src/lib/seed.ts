@@ -13,6 +13,7 @@ export function criarBancoDemo(hoje = new Date()): BancoDados {
     { id: "p-pers1", nome: "Lucas Pereira", papel: "personal" as const, registro: "CREF 012345-G/ES" },
     { id: "p-pers2", nome: "Fernanda Dias", papel: "personal" as const, registro: "CREF 067890-G/ES" },
     { id: "p-nutri1", nome: "Patrícia Moura", papel: "nutricionista" as const, registro: "CRN-4 12345" },
+    { id: "p-fisio1", nome: "Rodrigo Alves", papel: "fisioterapeuta" as const, registro: "CREFITO-15 98765-F" },
   ];
 
   const planos = [
@@ -118,7 +119,7 @@ export function criarBancoDemo(hoje = new Date()): BancoDados {
 
   const avaliacoes = [
     { id: novoId(), alunoId: "a1", personalId: "p-pers1", data: d(38), pesoKg: 82.4, alturaCm: 165, gorduraPct: 34, cinturaCm: 92, quadrilCm: 108 },
-    { id: novoId(), alunoId: "a1", personalId: "p-pers1", data: d(8), pesoKg: 79.1, alturaCm: 165, gorduraPct: 32, cinturaCm: 88, quadrilCm: 105 },
+    { id: novoId(), alunoId: "a1", personalId: "p-pers1", data: d(8), pesoKg: 79.1, alturaCm: 165, gorduraPct: 32, cinturaCm: 88, quadrilCm: 105, massaMagraKg: 53.8, massaMuscularKg: 28.9, aguaPct: 48.5, gorduraVisceral: 9, metabolismoBasalKcal: 1530, origem: "bioimpedancia" as const },
     { id: novoId(), alunoId: "a3", personalId: "p-pers1", data: d(190), pesoKg: 68, alturaCm: 170, gorduraPct: 27 },
     { id: novoId(), alunoId: "a3", personalId: "p-pers1", data: d(100), pesoKg: 65.5, alturaCm: 170, gorduraPct: 24 },
     { id: novoId(), alunoId: "a3", personalId: "p-pers1", data: d(15), pesoKg: 64.2, alturaCm: 170, gorduraPct: 22 },
@@ -200,6 +201,41 @@ export function criarBancoDemo(hoje = new Date()): BancoDados {
     ],
     acessos: [],
     lembretes: [],
+    produtos: [
+      { id: "pr-whey", nome: "Whey protein 900 g", categoria: "suplemento" as const, precoCentavos: 18990, estoque: 12, emoji: "🥛", descricao: "Proteína do soro do leite, sabor baunilha. 30 doses.", ativo: true },
+      { id: "pr-creatina", nome: "Creatina 300 g", categoria: "suplemento" as const, precoCentavos: 11990, estoque: 8, emoji: "💊", descricao: "Creatina monohidratada pura. 100 doses de 3 g.", ativo: true },
+      { id: "pr-barra", nome: "Barra de proteína", categoria: "suplemento" as const, precoCentavos: 1290, estoque: 40, emoji: "🍫", descricao: "20 g de proteína. Sabor chocolate.", ativo: true },
+      { id: "pr-isotonico", nome: "Isotônico 500 ml", categoria: "suplemento" as const, precoCentavos: 790, estoque: 24, emoji: "🧃", descricao: "Gelado na recepção.", ativo: true },
+      { id: "pr-garrafa", nome: "Garrafa térmica da academia", categoria: "acessorio" as const, precoCentavos: 6990, estoque: 15, emoji: "🧴", descricao: "750 ml, mantém gelado por 12 horas.", ativo: true },
+      { id: "pr-toalha", nome: "Toalha de treino", categoria: "acessorio" as const, precoCentavos: 3990, estoque: 20, emoji: "🧻", descricao: "Microfibra, secagem rápida.", ativo: true },
+      { id: "pr-luva", nome: "Luva de musculação", categoria: "acessorio" as const, precoCentavos: 5990, estoque: 2, emoji: "🧤", descricao: "Tamanhos P, M e G.", ativo: true },
+      { id: "pr-pac-pers10", nome: "Pacote 10 aulas com personal", categoria: "pacote" as const, precoCentavos: 90000, emoji: "🏋️", sessoes: 10, papel: "personal" as const, comissaoPct: 70, descricao: "10 sessões individuais de 1 hora. Válido por 60 dias.", ativo: true },
+      { id: "pr-pac-pers4", nome: "Pacote 4 aulas com personal", categoria: "pacote" as const, precoCentavos: 39600, emoji: "💪", sessoes: 4, papel: "personal" as const, comissaoPct: 70, descricao: "Para experimentar: 4 sessões de 1 hora.", ativo: true },
+      { id: "pr-bio", nome: "Avaliação com bioimpedância", categoria: "servico" as const, precoCentavos: 8000, emoji: "📊", sessoes: 1, papel: "personal" as const, comissaoPct: 50, descricao: "Composição corporal completa: gordura, músculo, água e metabolismo.", ativo: true },
+      { id: "pr-nutri", nome: "Consulta avulsa com nutricionista", categoria: "servico" as const, precoCentavos: 15000, emoji: "🥗", sessoes: 1, papel: "nutricionista" as const, comissaoPct: 70, descricao: "Consulta de 50 minutos com plano alimentar.", ativo: true },
+      { id: "pr-fisio", nome: "Sessão de fisioterapia", categoria: "servico" as const, precoCentavos: 12000, emoji: "🩺", sessoes: 1, papel: "fisioterapeuta" as const, comissaoPct: 70, descricao: "Avaliação ou sessão com o fisioterapeuta da academia.", ativo: true },
+    ],
+    vendas: [
+      { id: novoId(), alunoId: "a3", data: d(6), itens: [{ produtoId: "pr-whey", qtd: 1, precoCentavos: 18990 }], totalCentavos: 18990, status: "retirado" as const, origem: "app" as const },
+      { id: novoId(), alunoId: "a2", data: d(4), itens: [{ produtoId: "pr-pac-pers4", qtd: 1, precoCentavos: 39600 }], totalCentavos: 39600, status: "pago" as const, origem: "recepcao" as const },
+      { id: novoId(), alunoId: "a6", data: d(2), itens: [{ produtoId: "pr-barra", qtd: 3, precoCentavos: 1290 }, { produtoId: "pr-isotonico", qtd: 1, precoCentavos: 790 }], totalCentavos: 4660, status: "retirado" as const, origem: "app" as const },
+    ],
+    creditos: [
+      { id: "cr-a2", alunoId: "a2", produtoId: "pr-pac-pers4", profissionalId: "p-pers2", sessoesTotal: 4, usos: [d(2)], compradoEm: d(4) },
+    ],
+    exames: [
+      { id: novoId(), alunoId: "a1", data: d(20), laboratorio: "Laboratório exemplo", arquivoNome: "exames-mariana.pdf", enviadoPor: "aluno" as const, valores: [
+        { marcador: "Glicose em jejum", valor: 104, unidade: "mg/dL", refMin: 70, refMax: 99 },
+        { marcador: "Colesterol total", valor: 182, unidade: "mg/dL", refMax: 190 },
+        { marcador: "HDL", valor: 52, unidade: "mg/dL", refMin: 40 },
+        { marcador: "Triglicerídeos", valor: 160, unidade: "mg/dL", refMax: 150 },
+        { marcador: "Vitamina D", valor: 22, unidade: "ng/mL", refMin: 30 },
+        { marcador: "Ferritina", valor: 85, unidade: "ng/mL", refMin: 15, refMax: 150 },
+      ] },
+    ],
+    encaminhamentos: [
+      { id: novoId(), alunoId: "a4", deId: "p-rec", paraId: "p-fisio1", data: d(8), motivo: "Dor no joelho direito ao agachar. Relatou na recepção.", status: "aberto" as const },
+    ],
     notas: [
       { id: novoId(), alunoId: "a4", autorId: "p-rec", data: d(9), texto: "Comentou na recepção que o joelho voltou a doer. Pediu para ver com um personal." },
       { id: novoId(), alunoId: "a1", autorId: "p-nutri1", data: d(12), texto: "Está com fome no fim da tarde. Coloquei um pré-treino com banana, avisem se ela reclamar de cansaço." },

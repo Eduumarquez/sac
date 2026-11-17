@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Apple, CalendarDays, DoorOpen, ClipboardCheck, Dumbbell, MessageSquareText, Phone, Send, Smile, UserPlus } from "lucide-react";
+import { Apple, CalendarDays, DoorOpen, FlaskConical, Stethoscope, ClipboardCheck, Dumbbell, MessageSquareText, Phone, Send, Smile, UserPlus } from "lucide-react";
 import { alterar } from "@/lib/db";
 import type { BancoDados, Sensacao } from "@/lib/tipos";
 import { formatarData, isoAgora, novoId } from "@/lib/datas";
@@ -16,7 +16,7 @@ export const SENSACOES: { valor: Sensacao; emoji: string; rotulo: string }[] = [
 ];
 export const emojiSensacao = (v: number) => SENSACOES.find((s) => s.valor === v)?.emoji ?? "";
 
-const PAPEL: Record<string, string> = { dono: "Academia", recepcao: "Recepção", personal: "Personal", nutricionista: "Nutricionista" };
+const PAPEL: Record<string, string> = { dono: "Academia", recepcao: "Recepção", personal: "Personal", nutricionista: "Nutricionista", fisioterapeuta: "Fisioterapia" };
 
 type Evento = { id: string; data: string; icone: ReactNode; titulo: ReactNode; texto?: ReactNode; autor?: string; destaque?: boolean };
 
@@ -46,6 +46,12 @@ function eventosDoAluno(db: BancoDados, alunoId: string): Evento[] {
   }
   for (const c of db.contatos.filter((x) => x.alunoId === alunoId)) {
     ev.push({ id: c.id, data: c.data, icone: <Phone size={15} />, titulo: "Academia entrou em contato", texto: `por ${prof(c.responsavelId)?.nome ?? "recepção"}` });
+  }
+  for (const e of db.encaminhamentos.filter((x) => x.alunoId === alunoId)) {
+    ev.push({ id: e.id, data: e.data, icone: <Stethoscope size={15} />, titulo: <>Encaminhado para {prof(e.paraId)?.nome ?? "fisioterapia"}</>, texto: e.motivo, autor: prof(e.deId)?.nome, destaque: true });
+  }
+  for (const x of db.exames.filter((y) => y.alunoId === alunoId)) {
+    ev.push({ id: x.id, data: x.data, icone: <FlaskConical size={15} />, titulo: <>Exames de sangue {x.enviadoPor === "aluno" ? "enviados pelo aluno" : "registrados"}</>, texto: x.valores.length ? `${x.valores.length} marcadores` : x.arquivoNome });
   }
   const RES: Record<string, string> = { pausou: "pausou o plano", trocou_plano: "trocou de plano", treino_curto: "aceitou um ajuste no treino", cancelou: "cancelou" };
   for (const c of db.cancelamentos.filter((x) => x.alunoId === alunoId)) {

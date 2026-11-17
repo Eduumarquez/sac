@@ -19,6 +19,7 @@ export function CabecalhoAluno({ db, alunoId }: { db: BancoDados; alunoId: strin
   const plano = db.planos.find((p) => p.id === a.planoId);
   const personal = db.profissionais.find((p) => p.id === a.personalId);
   const nutri = db.profissionais.find((p) => p.id === a.nutricionistaId);
+  const enc = db.encaminhamentos.filter((e) => e.alunoId === alunoId).sort((x, y) => y.data.localeCompare(x.data))[0];
   return (
     <Cartao>
       <div className="flex flex-wrap items-start gap-4">
@@ -44,6 +45,12 @@ export function CabecalhoAluno({ db, alunoId }: { db: BancoDados; alunoId: strin
       </div>
       {risco.motivos.length > 0 && risco.nivel !== "baixo" && (
         <p className="mt-4 rounded-xl bg-zinc-50 p-3 text-sm text-zinc-600"><strong className="text-zinc-800">Por que está em risco:</strong> {risco.motivos.join(", ")}.</p>
+      )}
+      {enc && enc.status !== "liberado" && (
+        <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><strong>Em acompanhamento com a fisioterapia:</strong> {enc.motivo}</p>
+      )}
+      {enc?.status === "liberado" && enc.liberacao && enc.liberadoEm && diasEntre(new Date(enc.liberadoEm), new Date()) <= 90 && (
+        <p className="mt-3 rounded-xl bg-sky-50 p-3 text-sm text-sky-900"><strong>Orientação da fisioterapia:</strong> {enc.liberacao}</p>
       )}
       {(alertas.length > 0 || anamnese?.lesoes) && (
         <div className="mt-3 flex gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
@@ -96,6 +103,7 @@ export function EvolucaoCorporal({ db, alunoId }: { db: BancoDados; alunoId: str
   const ultima = aval[0];
   return (
     <div className="grid gap-3 sm:grid-cols-2">
+      <ComposicaoCorporal db={db} alunoId={alunoId} />
       <Cartao titulo="Peso"><GraficoLinha pontos={pesos} unidade="kg" menorEhMelhor={a.objetivo === "emagrecimento"} /></Cartao>
       <Cartao titulo="Gordura corporal"><GraficoLinha pontos={gordura} unidade="%" menorEhMelhor /></Cartao>
       <Cartao titulo="Avaliações físicas" className="sm:col-span-2">
@@ -191,5 +199,32 @@ export function HistoricoConsultas({ db, alunoId }: { db: BancoDados; alunoId: s
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Último resultado de bioimpedância, com a variação da massa muscular. */
+export function ComposicaoCorporal({ db, alunoId }: { db: BancoDados; alunoId: string }) {
+  const bio = db.avaliacoes.filter((x) => x.alunoId === alunoId && (x.massaMuscularKg != null || x.massaMagraKg != null)).sort((x, y) => y.data.localeCompare(x.data));
+  const u = bio[0];
+  if (!u) return null;
+  const itens: [string, string | undefined][] = [
+    ["Gordura", u.gorduraPct != null ? `${u.gorduraPct}%` : undefined],
+    ["Massa muscular", u.massaMuscularKg != null ? `${u.massaMuscularKg} kg` : undefined],
+    ["Massa magra", u.massaMagraKg != null ? `${u.massaMagraKg} kg` : undefined],
+    ["Água corporal", u.aguaPct != null ? `${u.aguaPct}%` : undefined],
+    ["Gordura visceral", u.gorduraVisceral != null ? `nível ${u.gorduraVisceral}` : undefined],
+    ["Metabolismo basal", u.metabolismoBasalKcal != null ? `${u.metabolismoBasalKcal} kcal` : undefined],
+  ];
+  const musc = bio.filter((x) => x.massaMuscularKg != null).map((x) => ({ x: new Date(x.data), y: x.massaMuscularKg! }));
+  return (
+    <Cartao titulo="Composição corporal (bioimpedância)" className="sm:col-span-2">
+      <p className="mb-3 text-xs text-zinc-500">Medida em {formatarData(u.data)}</p>
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {itens.filter(([, v]) => v).map(([k, v]) => (
+          <div key={k} className="rounded-xl bg-zinc-50 p-3"><dt className="text-xs text-zinc-500">{k}</dt><dd className="text-lg font-semibold">{v}</dd></div>
+        ))}
+      </dl>
+      {musc.length >= 2 && <div className="mt-4"><p className="mb-1 text-sm font-medium">Massa muscular</p><GraficoLinha pontos={musc} unidade="kg" /></div>}
+    </Cartao>
   );
 }

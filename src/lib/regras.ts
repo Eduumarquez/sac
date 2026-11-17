@@ -1,4 +1,4 @@
-import type { Aluno, BancoDados, Cobranca, EtapaRegua, Meta, MotivoCancelamento, Plano, Profissional } from "./tipos";
+import type { Aluno, BancoDados, CategoriaProduto, Cobranca, Credito, EtapaRegua, ItemVenda, Meta, MotivoCancelamento, Plano, Profissional, ValorExame, Venda } from "./tipos";
 import { calcularRisco, type ResultadoRisco } from "./risco";
 import { dataISO, diasEntre, novoId, somarMeses } from "./datas";
 
@@ -210,3 +210,63 @@ export const MOTIVOS_CANCELAMENTO: { id: MotivoCancelamento; rotulo: string }[] 
   { id: "saude", rotulo: "Saúde ou lesão" },
   { id: "outro", rotulo: "Outro motivo" },
 ];
+
+// ---------- loja, pacotes e serviços ----------
+
+/** Registra uma compra: baixa estoque, cria a venda e os créditos de sessões. Lança erro sem estoque. */
+export function comprar(db: BancoDados, alunoId: string, itens: { produtoId: string; qtd: number }[], origem: Venda["origem"], agora = new Date()): BancoDados {
+  const aluno = db.alunos.find((a) => a.id === alunoId);
+  if (!aluno) throw new Error("Aluno não encontrado");
+  const linhas: ItemVenda[] = itens.filter((i) => i.qtd > 0).map((i) => {
+    const p = db.produtos.find((x) => x.id === i.produtoId);
+    if (!p || !p.ativo) throw new Error("Produto indisponível");
+    if (p.estoque != null && p.estoque < i.qtd) throw new Error(`Sem estoque de ${p.nome}`);
+    return { produtoId: p.id, qtd: i.qtd, precoCentavos: p.precoCentavos };
+  });
+  if (!linhas.length) throw new Error("Carrinho vazio");
+  const data = agora.toISOString();
+  const fisio = db.profissionais.find((p) => p.papel === "fisioterapeuta");
+  const creditos: Credito[] = [];
+  for (const l of linhas) {
+    const p = db.produtos.find((x) => x.id === l.produtoId)!;
+    if (!p.sessoes) continue;
+    const profissionalId = p.papel === "personal" ? aluno.personalId : p.papel === "nutricionista" ? aluno.nutricionistaId : fisio?.id;
+    for (let k = 0; k < l.qtd; k++) creditos.push({ id: novoId(), alunoId, produtoId: p.id, profissionalId, sessoesTotal: p.sessoes, usos: [], compradoEm: data });
+  }
+  return {
+    ...db,
+    produtos: db.produtos.map((p) => {
+      const l = linhas.find((x) => x.produtoId === p.id);
+      return l && p.estoque != null ? { ...p, estoque: p.estoque - l.qtd } : p;
+    }),
+    vendas: [...db.vendas, { id: novoId(), alunoId, data, itens: linhas, totalCentavos: linhas.reduce((s, l) => s + l.qtd * l.precoCentavos, 0), status: "pago", origem }],
+    creditos: [...db.creditos, ...creditos],
+  };
+}
+
+export const saldoSessoes = (c: Credito) => c.sessoesTotal - c.usos.length;
+
+/** Receita da loja num período, por categoria, e quanto vai para cada profissional. */
+export function resumoLoja(db: BancoDados, desde: Date) {
+  const vendas = db.vendas.filter((v) => new Date(v.data) >= desde);
+  const porCategoria: Record<CategoriaProduto, number> = { suplemento: 0, acessorio: 0, pacote: 0, servico: 0 };
+  let comissao = 0;
+  for (const v of vendas) for (const l of v.itens) {
+    const p = db.produtos.find((x) => x.id === l.produtoId);
+    if (!p) continue;
+    const total = l.qtd * l.precoCentavos;
+    porCategoria[p.categoria] += total;
+    if (p.comissaoPct) comissao += Math.round((total * p.comissaoPct) / 100);
+  }
+  const total = Object.values(porCategoria).reduce((s, n) => s + n, 0);
+  return { vendas: vendas.length, total, porCategoria, comissaoProfissionais: comissao, academia: total - comissao };
+}
+
+// ---------- saúde ----------
+
+/** "baixo", "alto" ou null quando está dentro da referência informada. */
+export function foraDaReferencia(v: ValorExame): "baixo" | "alto" | null {
+  if (v.refMin != null && v.valor < v.refMin) return "baixo";
+  if (v.refMax != null && v.valor > v.refMax) return "alto";
+  return null;
+}

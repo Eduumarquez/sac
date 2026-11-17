@@ -11,6 +11,7 @@ import { Abas, Campo, Cartao, Carregando, Etiqueta, Vazio, estiloInput } from "@
 import { LinhaDoTempo } from "@/components/equipe";
 import { FluxoCancelamento } from "@/components/retencao";
 import { MetaAluno } from "@/components/meta";
+import { EncaminharFisio } from "@/components/saude";
 import { Botao } from "@/components/ui";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 
@@ -70,6 +71,7 @@ function Ficha() {
           <div className="space-y-3">
             <Frequencia db={db} alunoId={id} />
             <MetaAluno db={db} alunoId={id} autorId={aluno.personalId ?? aluno.nutricionistaId ?? "p-dono"} />
+            <EncaminharFisio db={db} alunoId={id} deId="p-rec" />
             {aluno.status !== "cancelado" && (
               <Cartao titulo="Aluno quer cancelar?">
                 <p className="mb-3 text-sm text-zinc-500">Registre o motivo e ofereça uma alternativa antes de cancelar. O sistema sugere a melhor opção.</p>

@@ -1,4 +1,4 @@
-export type Papel = "dono" | "recepcao" | "personal" | "nutricionista";
+export type Papel = "dono" | "recepcao" | "personal" | "nutricionista" | "fisioterapeuta";
 
 export type Profissional = {
   id: string;
@@ -108,6 +108,13 @@ export type AvaliacaoFisica = {
   quadrilCm?: number;
   bracoCm?: number;
   coxaCm?: number;
+  /** Bioimpedância */
+  massaMagraKg?: number;
+  massaMuscularKg?: number;
+  aguaPct?: number;
+  gorduraVisceral?: number;
+  metabolismoBasalKcal?: number;
+  origem?: "manual" | "bioimpedancia";
   observacoes?: string;
 };
 
@@ -168,6 +175,32 @@ export type Acesso = { id: string; alunoId: string; data: string; liberado: bool
 export type Lembrete = { id: string; cobrancaId: string; etapa: EtapaRegua; data: string };
 export type EtapaRegua = "antes" | "no_dia" | "3_dias" | "7_dias";
 
+// ---------- loja, pacotes e serviços ----------
+export type CategoriaProduto = "suplemento" | "acessorio" | "pacote" | "servico";
+export type Produto = {
+  id: string; nome: string; categoria: CategoriaProduto; precoCentavos: number; descricao: string;
+  estoque?: number; emoji: string;
+  /** pacote de sessões com um profissional */
+  sessoes?: number; papel?: "personal" | "nutricionista" | "fisioterapeuta";
+  /** % do valor que fica com o profissional (pacotes) */
+  comissaoPct?: number;
+  ativo: boolean;
+};
+export type ItemVenda = { produtoId: string; qtd: number; precoCentavos: number };
+export type Venda = { id: string; alunoId: string; data: string; itens: ItemVenda[]; totalCentavos: number; status: "pago" | "retirado"; origem: "app" | "recepcao" };
+/** Saldo de sessões comprado em pacote ou serviço avulso. */
+export type Credito = { id: string; alunoId: string; produtoId: string; profissionalId?: string; sessoesTotal: number; usos: string[]; compradoEm: string };
+
+// ---------- saúde ----------
+export type ValorExame = { marcador: string; valor: number; unidade: string; refMin?: number; refMax?: number };
+export type Exame = { id: string; alunoId: string; data: string; laboratorio?: string; arquivoNome?: string; valores: ValorExame[]; enviadoPor: "aluno" | "nutricionista" };
+export type Encaminhamento = {
+  id: string; alunoId: string; deId: string; paraId: string; data: string; motivo: string;
+  status: "aberto" | "em_atendimento" | "liberado";
+  /** orientação do fisioterapeuta para o treino */
+  liberacao?: string; liberadoEm?: string;
+};
+
 export type BancoDados = {
   versao: 1;
   academia: { nome: string };
@@ -191,4 +224,9 @@ export type BancoDados = {
   agendamentos: Agendamento[];
   acessos: Acesso[];
   lembretes: Lembrete[];
+  produtos: Produto[];
+  vendas: Venda[];
+  creditos: Credito[];
+  exames: Exame[];
+  encaminhamentos: Encaminhamento[];
 };

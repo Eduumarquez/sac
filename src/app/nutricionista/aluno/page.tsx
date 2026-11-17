@@ -10,8 +10,9 @@ import { EditorPlanoAlimentar, FormConsulta } from "@/components/editores";
 import { LinhaDoTempo } from "@/components/equipe";
 import { MetaAluno } from "@/components/meta";
 import { AgendarAtendimento } from "@/components/agenda";
+import { ExamesAluno } from "@/components/saude";
 
-type Aba = "consulta" | "plano" | "evolucao" | "treino" | "equipe";
+type Aba = "consulta" | "plano" | "exames" | "evolucao" | "treino" | "equipe";
 
 function Detalhe() {
   const db = useBanco();
@@ -35,8 +36,9 @@ function Detalhe() {
       <Link href="/nutricionista/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus pacientes</Link>
       <CabecalhoAluno db={db} alunoId={id} />
       <MetaAluno db={db} alunoId={id} autorId={nutriId} />
-      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }, { id: "equipe", rotulo: "Equipe" }]} />
+      <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "exames", rotulo: "Exames" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }, { id: "equipe", rotulo: "Equipe" }]} />
 
+      {aba === "exames" && <ExamesAluno db={db} alunoId={id} quem="nutricionista" />}
       {aba === "equipe" && <LinhaDoTempo db={db} alunoId={id} autorId={nutriId} />}
 
       {aba === "consulta" && (
