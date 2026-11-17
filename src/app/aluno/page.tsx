@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Apple, CalendarDays, Check, CircleUser, Dumbbell, Flame, LineChart, MapPin } from "lucide-react";
+import { Apple, CalendarDays, Check, CircleUser, Dumbbell, Flame, LineChart, MapPin, QrCode, Target } from "lucide-react";
 import { alterar, useBanco } from "@/lib/db";
 import { sequenciaSemanas, statusCobranca } from "@/lib/regras";
 import { formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
@@ -9,12 +9,18 @@ import { saudacao } from "@/lib/mascaras";
 import { Abas, BarraProgresso, Cartao, Carregando, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
 import { EvolucaoCargas } from "@/components/aluno";
 import { SENSACOES, emojiSensacao } from "@/components/equipe";
+import { AgendaDoAluno } from "@/components/agenda";
+import { Modal, PagarPix, QR } from "@/components/cobranca";
+import { BarraMeta } from "@/components/meta";
+import { FluxoCancelamento } from "@/components/retencao";
+import type { Cobranca } from "@/lib/tipos";
 import type { Sensacao } from "@/lib/tipos";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
 
-type Aba = "treino" | "dieta" | "evolucao" | "conta";
+type Aba = "treino" | "agenda" | "dieta" | "evolucao" | "conta";
 const ABAS: { id: Aba; rotulo: string; icone: typeof Dumbbell }[] = [
   { id: "treino", rotulo: "Treino", icone: Dumbbell },
+  { id: "agenda", rotulo: "Agenda", icone: CalendarDays },
   { id: "dieta", rotulo: "Dieta", icone: Apple },
   { id: "evolucao", rotulo: "Evolução", icone: LineChart },
   { id: "conta", rotulo: "Conta", icone: CircleUser },
@@ -22,7 +28,7 @@ const ABAS: { id: Aba; rotulo: string; icone: typeof Dumbbell }[] = [
 
 export default function AppAluno() {
   const db = useBanco();
-  const alunos = db?.alunos.filter((a) => a.status === "ativo") ?? [];
+  const alunos = db?.alunos.filter((a) => a.status !== "cancelado") ?? [];
   const id = usePessoaSelecionada(alunos, "aluno");
   const [aba, setAba] = useState<Aba>("treino");
   const [divisaoEscolhida, setDivisao] = useState<number | null>(null);
@@ -30,6 +36,9 @@ export default function AppAluno() {
   const [cargas, setCargas] = useState<Record<string, string>>({});
   const [sensacao, setSensacao] = useState<Sensacao | null>(null);
   const [comentario, setComentario] = useState("");
+  const [verQR, setVerQR] = useState(false);
+  const [pagando, setPagando] = useState<Cobranca | null>(null);
+  const [cancelando, setCancelando] = useState(false);
 
   if (!db) return <Carregando />;
   const aluno = db.alunos.find((a) => a.id === id);
@@ -61,6 +70,7 @@ export default function AppAluno() {
   const checkinHoje = meusCheckins.find((c) => c.data.slice(0, 10) === hojeStr);
   const treinandoHaTempo = !!checkinHoje && agora.getTime() - new Date(checkinHoje.data).getTime() > 45 * 60_000;
   const pedirFeedback = !!treino && !feedbackHoje && (treinoConcluido || treinandoHaTempo);
+  const meta = db.metas.find((m) => m.alunoId === aluno.id);
   const horaAgora = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
   const proximaRefeicao = plano?.refeicoes.findIndex((r) => r.horario >= horaAgora) ?? -1;
 
@@ -104,6 +114,9 @@ export default function AppAluno() {
         <SeletorPessoa opcoes={alunos} tipo="aluno" rotulo="Aluno" />
       </div>
 
+      {aluno.status === "pausado" && (
+        <p className="mb-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">Seu plano está pausado{aluno.pausadoAte ? ` até ${formatarData(aluno.pausadoAte)}` : ""}. Sem cobrança nesse período. Te esperamos na volta!</p>
+      )}
       {/* destaque: sequência e check-in */}
       <section className="rounded-3xl bg-gradient-to-br from-marca-700 to-marca-900 p-5 text-white shadow-lg">
         <div className="flex items-center justify-between">
@@ -123,6 +136,15 @@ export default function AppAluno() {
           className={`mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-semibold transition ${fezCheckin ? "bg-white/15 text-white/80" : "bg-white text-marca-800 hover:bg-marca-50"}`}>
           {fezCheckin ? <><Check size={20} /> Check-in feito hoje</> : <><MapPin size={20} /> Cheguei na academia</>}
         </button>
+        <button onClick={() => setVerQR(true)} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl py-2 text-sm font-medium text-white/85 hover:bg-white/10">
+          <QrCode size={18} /> Meu QR de entrada na catraca
+        </button>
+        {meta && (
+          <div className="mt-3 rounded-2xl bg-white/10 p-3">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-white/70"><Target size={14} /> Minha meta</p>
+            <BarraMeta db={db} meta={meta} claro />
+          </div>
+        )}
       </section>
 
       <div className="mt-5 hidden sm:block">
@@ -212,6 +234,8 @@ export default function AppAluno() {
           )
         )}
 
+        {aba === "agenda" && <AgendaDoAluno db={db} alunoId={aluno.id} />}
+
         {aba === "dieta" && (
           <div className="animar-entrada space-y-3">
             {!nutri ? (
@@ -268,7 +292,10 @@ export default function AppAluno() {
                   return (
                     <li key={c.id} className="flex items-center justify-between py-3">
                       <span><span className="font-medium">{formatarDinheiro(c.valorCentavos)}</span><span className="block text-xs text-zinc-500">vence {formatarData(c.vencimento)}</span></span>
-                      {s === "pago" ? <Etiqueta cor="verde">Pago</Etiqueta> : s === "atrasado" ? <Etiqueta cor="vermelho">Atrasado</Etiqueta> : <Etiqueta>A vencer</Etiqueta>}
+                      <span className="flex items-center gap-2">
+                        {s === "pago" ? <Etiqueta cor="verde">Pago</Etiqueta> : s === "atrasado" ? <Etiqueta cor="vermelho">Atrasado</Etiqueta> : <Etiqueta>A vencer</Etiqueta>}
+                        {s !== "pago" && <button onClick={() => setPagando(c)} className="rounded-lg bg-marca-700 px-3 py-1.5 text-xs font-semibold text-white">Pagar com Pix</button>}
+                      </span>
                     </li>
                   );
                 })}
@@ -280,13 +307,24 @@ export default function AppAluno() {
                 <li className="flex justify-between"><span className="text-zinc-500">Nutricionista</span><span>{nutri?.nome ?? "—"}</span></li>
               </ul>
             </Cartao>
+            <button onClick={() => setCancelando(true)} className="w-full py-3 text-center text-sm text-zinc-400 hover:text-zinc-600">Cancelar meu plano</button>
           </div>
         )}
       </div>
 
+      {verQR && (
+        <Modal titulo="Entrada na academia" aoFechar={() => setVerQR(false)}>
+          <QR texto={`SAC:${aluno.id}`} tamanho={220} rotulo="QR code de entrada" />
+          <p className="mt-3 text-center text-sm text-zinc-500">Aproxime do leitor da catraca. O check-in é feito sozinho.</p>
+          <p className="mt-1 text-center font-mono text-xs text-zinc-400">SAC:{aluno.id}</p>
+        </Modal>
+      )}
+      {pagando && <PagarPix cobranca={pagando} aoFechar={() => setPagando(null)} />}
+      <FluxoCancelamento db={db} alunoId={aluno.id} origem="app" aberto={cancelando} aoFechar={() => setCancelando(false)} />
+
       {/* barra de navegação inferior (celular) */}
       <nav aria-label="Seções do app" className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden">
-        <ul className="mx-auto grid max-w-lg grid-cols-4">
+        <ul className="mx-auto grid max-w-lg grid-cols-5">
           {ABAS.map((a) => (
             <li key={a.id}>
               <button onClick={() => { setAba(a.id); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-current={aba === a.id ? "page" : undefined}

@@ -9,6 +9,7 @@ import { diasEntre, formatarData } from "@/lib/datas";
 import { CabecalhoPagina, Carregando, Etiqueta, EtiquetaRisco, Indicador, Vazio } from "@/components/ui";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
 import { ListaCarteira } from "@/components/ListaCarteira";
+import { AgendaEquipe } from "@/components/agenda";
 
 export default function AreaPersonal() {
   const db = useBanco();
@@ -61,6 +62,8 @@ export default function AreaPersonal() {
           </ul>
         </section>
       )}
+
+      <div className="mb-6"><AgendaEquipe db={db} profissionalId={eu} dias={3} titulo="Sua agenda" /></div>
 
       <ListaCarteira
         vazio={<Vazio>Nenhum aluno atribuído a você ainda. Novos alunos de planos com personal aparecem aqui após a matrícula.</Vazio>}

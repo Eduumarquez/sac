@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Apple, Building2, ClipboardSignature, Dumbbell, Menu, RotateCcw, Smartphone, X } from "lucide-react";
+import { Apple, Building2, ClipboardSignature, Dumbbell, Menu, RotateCcw, ScanLine, Smartphone, X } from "lucide-react";
 import { reiniciarDemo } from "@/lib/db";
 import { Confirmacao, avisar } from "./ui";
 
 export const AREAS = [
   { href: "/matricula/", rotulo: "Matrícula", icone: ClipboardSignature },
   { href: "/painel/", rotulo: "Academia", icone: Building2 },
+  { href: "/recepcao/", rotulo: "Recepção", icone: ScanLine },
   { href: "/personal/", rotulo: "Personal", icone: Dumbbell },
   { href: "/nutricionista/", rotulo: "Nutricionista", icone: Apple },
   { href: "/aluno/", rotulo: "App do aluno", icone: Smartphone },

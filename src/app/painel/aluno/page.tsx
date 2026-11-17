@@ -9,6 +9,9 @@ import { formatarData, formatarDinheiro } from "@/lib/datas";
 import type { StatusAluno } from "@/lib/tipos";
 import { Abas, Campo, Cartao, Carregando, Etiqueta, Vazio, estiloInput } from "@/components/ui";
 import { LinhaDoTempo } from "@/components/equipe";
+import { FluxoCancelamento } from "@/components/retencao";
+import { MetaAluno } from "@/components/meta";
+import { Botao } from "@/components/ui";
 import { CabecalhoAluno, EvolucaoCargas, EvolucaoCorporal, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 
 type Aba = "geral" | "treino" | "corpo" | "nutricao" | "financeiro";
@@ -17,6 +20,7 @@ function Ficha() {
   const db = useBanco();
   const id = useSearchParams().get("id") ?? "";
   const [aba, setAba] = useState<Aba>("geral");
+  const [cancelando, setCancelando] = useState(false);
   if (!db) return <Carregando />;
   const aluno = db.alunos.find((a) => a.id === id);
   if (!aluno) return <main className="mx-auto max-w-5xl px-4 py-8"><Vazio>Aluno não encontrado.</Vazio></main>;
@@ -28,6 +32,7 @@ function Ficha() {
     <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
       <Link href="/painel/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Voltar ao painel</Link>
       <CabecalhoAluno db={db} alunoId={id} />
+      <FluxoCancelamento db={db} alunoId={id} origem="recepcao" aberto={cancelando} aoFechar={() => setCancelando(false)} />
       <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[
         { id: "geral", rotulo: "Visão geral" }, { id: "treino", rotulo: "Treino" }, { id: "corpo", rotulo: "Avaliações" },
         { id: "nutricao", rotulo: "Nutrição" }, { id: "financeiro", rotulo: "Financeiro" },
@@ -56,13 +61,22 @@ function Ficha() {
                 </select>
               </Campo>
               <Campo rotulo="Situação">
-                <select className={estiloInput} value={aluno.status} onChange={(e) => atualizar("status", e.target.value as StatusAluno)}>
+                <select className={estiloInput} value={aluno.status} onChange={(e) => (e.target.value === "cancelado" ? setCancelando(true) : atualizar("status", e.target.value as StatusAluno))}>
                   <option value="ativo">Ativo</option><option value="pausado">Pausado</option><option value="cancelado">Cancelado</option>
                 </select>
               </Campo>
             </div>
           </Cartao>
-          <Frequencia db={db} alunoId={id} />
+          <div className="space-y-3">
+            <Frequencia db={db} alunoId={id} />
+            <MetaAluno db={db} alunoId={id} autorId={aluno.personalId ?? aluno.nutricionistaId ?? "p-dono"} />
+            {aluno.status !== "cancelado" && (
+              <Cartao titulo="Aluno quer cancelar?">
+                <p className="mb-3 text-sm text-zinc-500">Registre o motivo e ofereça uma alternativa antes de cancelar. O sistema sugere a melhor opção.</p>
+                <Botao variante="secundario" onClick={() => setCancelando(true)}>Registrar pedido de cancelamento</Botao>
+              </Cartao>
+            )}
+          </div>
           <div className="sm:col-span-2"><LinhaDoTempo db={db} alunoId={id} autorId="p-dono" /></div>
         </div>
       )}

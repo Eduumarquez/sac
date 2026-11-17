@@ -9,9 +9,13 @@ import { riscoDoAluno, statusCobranca } from "@/lib/regras";
 import { dataISO, diasEntre, formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { saudacao } from "@/lib/mascaras";
 import { Resultados } from "@/components/Resultados";
+import { CartaoDinheiroSalvo } from "@/components/retencao";
+import { ReguaCobranca } from "@/components/cobranca";
+import { AgendaEquipe } from "@/components/agenda";
+import { lembretesDeHoje } from "@/lib/regras";
 import { Abas, Avatar, BarraProgresso, Botao, CabecalhoPagina, Cartao, Carregando, Etiqueta, EtiquetaRisco, Indicador, Vazio, avisar, estiloInput } from "@/components/ui";
 
-type Aba = "dia" | "alunos" | "financeiro" | "resultados";
+type Aba = "dia" | "alunos" | "agenda" | "financeiro" | "resultados";
 type Filtro = "todos" | "risco" | "novos";
 
 const linkWhats = (tel: string, texto: string) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
@@ -71,16 +75,19 @@ export default function Painel() {
         <Indicador rotulo="Recebido no mês" valor={formatarDinheiro(dados.recebidoMes)} detalhe={`${dados.treinaramHoje} treinaram hoje`} icone={<TrendingUp size={18} />} />
         <Indicador rotulo="Em atraso" valor={formatarDinheiro(dados.atrasado.reduce((s, c) => s + c.valorCentavos, 0))} detalhe={`${dados.atrasado.length} cobrança(s)`} icone={<Wallet size={18} />} />
       </div>
+      <CartaoDinheiroSalvo db={db} compacto />
 
       <div className="mt-8">
         <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[
           { id: "dia", rotulo: "Lista do dia", contador: pendentes.length },
           { id: "alunos", rotulo: "Alunos" },
-          { id: "financeiro", rotulo: "Financeiro", contador: dados.atrasado.length },
+          { id: "agenda", rotulo: "Agenda" },
+          { id: "financeiro", rotulo: "Financeiro", contador: lembretesDeHoje(db).length },
           { id: "resultados", rotulo: "Resultados" },
         ]} />
 
         {aba === "resultados" && <Resultados db={db} />}
+        {aba === "agenda" && <AgendaEquipe db={db} titulo="Agenda da academia" />}
 
         {aba === "dia" && (
           <div className="space-y-4">
@@ -172,6 +179,7 @@ export default function Painel() {
                         <span className="hidden sm:inline"> · desde {formatarData(aluno.matriculadoEm)}</span>
                       </p>
                     </div>
+                    {aluno.origem !== "direto" && <Etiqueta cor="azul">{aluno.origem === "wellhub" ? "Wellhub" : "Totalpass"}</Etiqueta>}
                     <EtiquetaRisco nivel={risco.nivel} pontuacao={risco.pontuacao} />
                     <ChevronRight size={18} className="text-zinc-300" />
                   </Link>
@@ -183,8 +191,11 @@ export default function Painel() {
 
         {aba === "financeiro" && (() => {
           const abertas = dados.cobr.filter((c) => c.status !== "pago").sort((a, b) => a.vencimento.localeCompare(b.vencimento));
-          if (!abertas.length) return <Vazio icone={<Check size={28} />}>Nenhuma cobrança em aberto.</Vazio>;
           return (
+            <div className="space-y-4">
+            <ReguaCobranca db={db} />
+            <h2 className="text-sm font-semibold text-zinc-500">Cobranças em aberto · {abertas.length}</h2>
+            {!abertas.length ? <Vazio icone={<Check size={28} />}>Nenhuma cobrança em aberto.</Vazio> : (
             <ul className="divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
               {abertas.slice(0, 30).map((c) => {
                 const aluno = db.alunos.find((a) => a.id === c.alunoId)!;
@@ -209,6 +220,8 @@ export default function Painel() {
                 );
               })}
             </ul>
+            )}
+            </div>
           );
         })()}
       </div>

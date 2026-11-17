@@ -1,4 +1,4 @@
-import type { Aluno, BancoDados, Cobranca, Plano, Profissional } from "./tipos";
+import type { Aluno, BancoDados, Cobranca, EtapaRegua, Meta, MotivoCancelamento, Plano, Profissional } from "./tipos";
 import { calcularRisco, type ResultadoRisco } from "./risco";
 import { dataISO, diasEntre, novoId, somarMeses } from "./datas";
 
@@ -91,3 +91,122 @@ export function imc(pesoKg: number, alturaCm: number): number {
   const m = alturaCm / 100;
   return Math.round((pesoKg / (m * m)) * 10) / 10;
 }
+
+// ---------- valor, retenção e dinheiro salvo ----------
+
+/** Quanto o aluno paga por mês (planos anuais divididos por 12; agregadores = 0). */
+export function valorMensal(db: Pick<BancoDados, "planos">, aluno: Pick<Aluno, "planoId">): number {
+  const p = db.planos.find((x) => x.id === aluno.planoId);
+  return p ? Math.round(p.valorCentavos / p.periodicidadeMeses) : 0;
+}
+
+export type ItemSalvo = { alunoId: string; data: string; como: "contato" | "cancelamento"; valorMensalCentavos: number };
+
+/**
+ * Mensalidade que continuou entrando graças à equipe nos últimos 90 dias:
+ * alunos em risco que foram contatados e voltaram a treinar, e pedidos de
+ * cancelamento revertidos (pausa, troca de plano ou treino curto).
+ * Cada aluno conta uma vez.
+ */
+export function dinheiroSalvo(db: BancoDados, hoje = new Date()): { totalMensalCentavos: number; itens: ItemSalvo[] } {
+  const limite = new Date(hoje.getTime() - 90 * 86_400_000).toISOString();
+  const porAluno = new Map<string, ItemSalvo>();
+  const ativo = (id: string) => db.alunos.find((a) => a.id === id && a.status !== "cancelado");
+  for (const c of db.cancelamentos) {
+    if (c.data < limite || c.resultado === "cancelou" || !ativo(c.alunoId) || porAluno.has(c.alunoId)) continue;
+    porAluno.set(c.alunoId, { alunoId: c.alunoId, data: c.data, como: "cancelamento", valorMensalCentavos: c.valorMensalCentavos });
+  }
+  for (const c of db.contatos) {
+    const a = ativo(c.alunoId);
+    if (c.data < limite || !a || porAluno.has(c.alunoId)) continue;
+    const voltou = db.checkins.some((k) => k.alunoId === c.alunoId && k.data > c.data);
+    const valor = valorMensal(db, a);
+    if (voltou && valor > 0) porAluno.set(c.alunoId, { alunoId: c.alunoId, data: c.data, como: "contato", valorMensalCentavos: valor });
+  }
+  const itens = [...porAluno.values()].sort((a, b) => b.data.localeCompare(a.data));
+  return { totalMensalCentavos: itens.reduce((s, i) => s + i.valorMensalCentavos, 0), itens };
+}
+
+// ---------- acesso (catraca / QR) ----------
+
+/** Regra da catraca: cancelado, pausado ou com mensalidade atrasada há mais de 15 dias não entra. */
+export function regraDeAcesso(db: BancoDados, alunoId: string, hoje = new Date()): { liberado: boolean; motivo?: string } {
+  const a = db.alunos.find((x) => x.id === alunoId);
+  if (!a) return { liberado: false, motivo: "Aluno não encontrado" };
+  if (a.status === "cancelado") return { liberado: false, motivo: "Matrícula cancelada" };
+  if (a.status === "pausado" || (a.pausadoAte && a.pausadoAte >= dataISO(hoje))) return { liberado: false, motivo: `Plano pausado${a.pausadoAte ? ` até ${a.pausadoAte.split("-").reverse().join("/")}` : ""}` };
+  const atrasos = db.cobrancas
+    .filter((c) => c.alunoId === alunoId && statusCobranca(c, hoje) === "atrasado")
+    .map((c) => diasEntre(new Date(c.vencimento + "T12:00:00"), hoje));
+  const maior = atrasos.length ? Math.max(...atrasos) : 0;
+  if (maior > 15) return { liberado: false, motivo: `Mensalidade atrasada há ${maior} dias` };
+  return { liberado: true };
+}
+
+// ---------- régua de cobrança ----------
+
+export const ETAPAS_REGUA: { id: EtapaRegua; rotulo: string }[] = [
+  { id: "antes", rotulo: "3 dias antes do vencimento" },
+  { id: "no_dia", rotulo: "No dia do vencimento" },
+  { id: "3_dias", rotulo: "3 dias de atraso" },
+  { id: "7_dias", rotulo: "7 dias de atraso" },
+];
+
+/** Em que etapa da régua a cobrança está hoje (ou null se não é dia de lembrar). */
+export function etapaDaRegua(c: Cobranca, hoje = new Date()): EtapaRegua | null {
+  if (statusCobranca(c, hoje) === "pago") return null;
+  const d = diasEntre(new Date(c.vencimento + "T12:00:00"), new Date(dataISO(hoje) + "T12:00:00"));
+  if (d >= -3 && d <= -1) return "antes";
+  if (d === 0) return "no_dia";
+  if (d >= 3 && d <= 6) return "3_dias";
+  if (d >= 7) return "7_dias";
+  return null;
+}
+
+/** Lembretes que a régua manda hoje e ainda não foram enviados. */
+export function lembretesDeHoje(db: BancoDados, hoje = new Date()): { cobranca: Cobranca; etapa: EtapaRegua }[] {
+  return db.cobrancas.flatMap((c) => {
+    const etapa = etapaDaRegua(c, hoje);
+    if (!etapa) return [];
+    if (db.lembretes.some((l) => l.cobrancaId === c.id && l.etapa === etapa)) return [];
+    return [{ cobranca: c, etapa }];
+  });
+}
+
+export function mensagemCobranca(nome: string, c: Cobranca, etapa: EtapaRegua): string {
+  const valor = (c.valorCentavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const venc = c.vencimento.split("-").reverse().join("/");
+  const primeiro = nome.split(" ")[0];
+  if (etapa === "antes") return `Oi ${primeiro}! Sua mensalidade de ${valor} vence em ${venc}. Você pode pagar pelo app com Pix.`;
+  if (etapa === "no_dia") return `Oi ${primeiro}! Hoje vence sua mensalidade de ${valor}. É só abrir o app e pagar com Pix.`;
+  if (etapa === "3_dias") return `Oi ${primeiro}! Sua mensalidade de ${valor} venceu em ${venc}. Quer que eu te mande o Pix?`;
+  return `Oi ${primeiro}, tudo bem? A mensalidade de ${valor} está em aberto desde ${venc}. Se estiver com alguma dificuldade, fala com a gente que a gente encontra um jeito.`;
+}
+
+// ---------- metas ----------
+
+/** Valor atual da meta (última medida registrada) e quanto do caminho já foi feito, de 0 a 1. */
+export function progressoMeta(db: BancoDados, meta: Meta): { atual: number; progresso: number; data?: string } {
+  const medidas: { data: string; v: number }[] =
+    meta.tipo === "peso"
+      ? [
+          ...db.avaliacoes.filter((a) => a.alunoId === meta.alunoId).map((a) => ({ data: a.data, v: a.pesoKg })),
+          ...db.consultas.filter((c) => c.alunoId === meta.alunoId && c.pesoKg).map((c) => ({ data: c.data, v: c.pesoKg! })),
+        ]
+      : db.avaliacoes.filter((a) => a.alunoId === meta.alunoId && a.gorduraPct != null).map((a) => ({ data: a.data, v: a.gorduraPct! }));
+  const ultima = medidas.filter((m) => m.data >= meta.criadaEm.slice(0, 10)).sort((a, b) => b.data.localeCompare(a.data))[0]
+    ?? medidas.sort((a, b) => b.data.localeCompare(a.data))[0];
+  const atual = ultima?.v ?? meta.inicial;
+  const total = meta.alvo - meta.inicial;
+  const progresso = total === 0 ? 1 : Math.max(0, Math.min(1, (atual - meta.inicial) / total));
+  return { atual, progresso, data: ultima?.data };
+}
+
+export const MOTIVOS_CANCELAMENTO: { id: MotivoCancelamento; rotulo: string }[] = [
+  { id: "preco", rotulo: "Está caro" },
+  { id: "tempo", rotulo: "Falta de tempo" },
+  { id: "resultado", rotulo: "Não vejo resultado" },
+  { id: "mudanca", rotulo: "Vou me mudar" },
+  { id: "saude", rotulo: "Saúde ou lesão" },
+  { id: "outro", rotulo: "Outro motivo" },
+];

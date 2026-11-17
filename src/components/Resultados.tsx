@@ -6,6 +6,9 @@ import { riscoDoAluno, statusCobranca } from "@/lib/regras";
 import { DIA_MS, formatarDinheiro } from "@/lib/datas";
 import { BarraHorizontal, Cartao, GraficoBarras, Indicador } from "./ui";
 import { emojiSensacao } from "./equipe";
+import { CartaoDinheiroSalvo } from "./retencao";
+import { Avatar } from "./ui";
+import { MessageCircle, Ticket } from "lucide-react";
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 const um = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -16,6 +19,7 @@ export function Resultados({ db }: { db: BancoDados }) {
   const ativos = db.alunos.filter((a) => a.status === "ativo");
   const plano = (id: string) => db.planos.find((p) => p.id === id);
   const mrr = ativos.reduce((s, a) => { const p = plano(a.planoId); return s + (p ? p.valorCentavos / p.periodicidadeMeses : 0); }, 0);
+  const pagantes = ativos.filter((a) => !plano(a.planoId)?.agregador).length;
   const atraso = db.cobrancas.filter((c) => statusCobranca(c, hoje) === "atrasado").reduce((s, c) => s + c.valorCentavos, 0);
 
   // check-ins por semana (8 semanas, a última é a atual)
@@ -39,11 +43,19 @@ export function Resultados({ db }: { db: BancoDados }) {
   const fb30 = db.feedbacks.filter((f) => hoje.getTime() - new Date(f.data).getTime() <= 30 * DIA_MS);
   const mediaFb = fb30.length ? fb30.reduce((s, f) => s + f.sensacao, 0) / fb30.length : 0;
 
+  // agregadores: visitas nos últimos 30 dias e quem já treina como aluno fiel
+  const agreg = db.alunos.filter((a) => a.origem !== "direto" && a.status === "ativo").map((a) => ({
+    a, visitas: db.checkins.filter((c) => c.alunoId === a.id && hoje.getTime() - new Date(c.data).getTime() <= 30 * DIA_MS).length,
+  })).sort((x, y) => y.visitas - x.visitas);
+  const visitasApp = (o: string) => agreg.filter((g) => g.a.origem === o).reduce((s, g) => s + g.visitas, 0);
+  const planoConv = db.planos.find((p) => p.id === "pl-acomp") ?? db.planos[0];
+
   return (
     <div className="space-y-4">
+      <CartaoDinheiroSalvo db={db} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Indicador rotulo="Receita recorrente" valor={formatarDinheiro(mrr)} detalhe="por mês, alunos ativos" icone={<Wallet size={18} />} />
-        <Indicador rotulo="Ticket médio" valor={formatarDinheiro(ativos.length ? mrr / ativos.length : 0)} detalhe={`${ativos.length} alunos ativos`} icone={<BarChart3 size={18} />} />
+        <Indicador rotulo="Ticket médio" valor={formatarDinheiro(pagantes ? mrr / pagantes : 0)} detalhe={`${pagantes} alunos pagantes`} icone={<BarChart3 size={18} />} />
         <Indicador rotulo="Frequência média" valor={`${um(freqMedia)}x`} detalhe="treinos por aluno na semana" icone={<Repeat size={18} />} />
         <Indicador rotulo="Inadimplência" valor={pct(mrr ? atraso / mrr : 0)} detalhe={`${formatarDinheiro(atraso)} em atraso`} icone={<Wallet size={18} />} destaque={atraso ? "vermelho" : undefined} />
       </div>
@@ -62,7 +74,7 @@ export function Resultados({ db }: { db: BancoDados }) {
         </Cartao>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Cartao titulo="Retenção em ação" icone={<HeartHandshake size={18} />}>
           <p className="text-3xl font-bold">{voltaram.size}<span className="text-base font-normal text-zinc-500"> de {contatados.size}</span></p>
           <p className="mt-1 text-sm text-zinc-500">alunos contatados nos últimos 30 dias voltaram a treinar depois do contato.</p>
@@ -75,6 +87,21 @@ export function Resultados({ db }: { db: BancoDados }) {
               <p className="mt-1 text-sm text-zinc-500">{fb30.length} avaliações nos últimos 30 dias, {fb30.filter((f) => f.sensacao <= 2).length} negativas.</p>
             </>
           ) : <p className="text-sm text-zinc-500">Ainda sem avaliações. Os alunos avaliam pelo app ao terminar o treino.</p>}
+        </Cartao>
+        <Cartao titulo="Wellhub e Totalpass" icone={<Ticket size={18} />}>
+          <p className="text-sm text-zinc-500">Visitas nos últimos 30 dias: <strong className="text-zinc-800">{visitasApp("wellhub")}</strong> Wellhub · <strong className="text-zinc-800">{visitasApp("totalpass")}</strong> Totalpass</p>
+          {agreg.filter((g) => g.visitas >= 6).length > 0 && <p className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">Prontos para virar plano</p>}
+          <ul className="space-y-2">
+            {agreg.filter((g) => g.visitas >= 6).map(({ a, visitas }) => (
+              <li key={a.id} className="flex items-center gap-2 text-sm">
+                <Avatar nome={a.nome} tamanho="sm" />
+                <span className="min-w-0 flex-1"><span className="font-medium">{a.nome}</span><span className="block text-xs text-zinc-500">{visitas} visitas em 30 dias</span></span>
+                <a href={`https://wa.me/${a.telefone}?text=${encodeURIComponent(`Oi ${a.nome.split(" ")[0]}! Você já é de casa: ${visitas} treinos este mês. Que tal um personal só seu no plano ${planoConv.nome}? Primeiro mês com desconto.`)}`} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"><MessageCircle size={14} className="text-[#25D366]" /> Oferecer</a>
+              </li>
+            ))}
+          </ul>
+          {!agreg.length && <p className="mt-2 text-sm text-zinc-500">Nenhum aluno de agregador ainda.</p>}
         </Cartao>
         <Cartao titulo="Alunos por plano">
           <div className="space-y-3">

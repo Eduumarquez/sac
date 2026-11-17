@@ -16,6 +16,8 @@ export type Plano = {
   incluiPersonal: boolean;
   incluiNutricionista: boolean;
   descricao: string;
+  /** Plano de agregador (Wellhub, Totalpass): não aparece na matrícula e não gera mensalidade */
+  agregador?: "wellhub" | "totalpass";
 };
 
 export type Objetivo = "emagrecimento" | "hipertrofia" | "condicionamento" | "saude" | "reabilitacao";
@@ -37,6 +39,8 @@ export type Aluno = {
   status: StatusAluno;
   origem: "direto" | "wellhub" | "totalpass";
   consentimentoSaudeEm?: string;
+  /** Plano pausado até esta data (AAAA-MM-DD) */
+  pausadoAte?: string;
 };
 
 export type Anamnese = {
@@ -48,7 +52,8 @@ export type Anamnese = {
   observacoes: string;
 };
 
-export type Checkin = { id: string; alunoId: string; data: string };
+export type ViaCheckin = "app" | "qr" | "wellhub" | "totalpass";
+export type Checkin = { id: string; alunoId: string; data: string; via?: ViaCheckin };
 
 export type StatusCobranca = "pendente" | "pago" | "atrasado";
 
@@ -146,6 +151,23 @@ export type Nota = { id: string; alunoId: string; autorId: string; data: string;
 export type Sensacao = 1 | 2 | 3 | 4 | 5;
 export type FeedbackTreino = { id: string; alunoId: string; data: string; divisao: string; sensacao: Sensacao; comentario?: string };
 
+/** Meta compartilhada por personal e nutricionista. */
+export type Meta = { id: string; alunoId: string; tipo: "peso" | "gordura"; inicial: number; alvo: number; prazo: string; criadaPorId: string; criadaEm: string };
+
+export type MotivoCancelamento = "preco" | "tempo" | "resultado" | "mudanca" | "saude" | "outro";
+export type ResultadoCancelamento = "pausou" | "trocou_plano" | "treino_curto" | "cancelou";
+export type PedidoCancelamento = { id: string; alunoId: string; data: string; motivo: MotivoCancelamento; origem: "recepcao" | "app"; resultado: ResultadoCancelamento; detalhe?: string; valorMensalCentavos: number };
+
+export type Aula = { id: string; nome: string; inicio: string; duracaoMin: number; profissionalId: string; vagas: number; inscritos: string[] };
+export type Agendamento = { id: string; alunoId: string; profissionalId: string; tipo: "avaliacao" | "consulta"; inicio: string; status: "marcado" | "feito" | "faltou" };
+
+/** Tentativa de entrada na academia (catraca / QR). */
+export type Acesso = { id: string; alunoId: string; data: string; liberado: boolean; motivo?: string; via: ViaCheckin };
+
+/** Lembrete de cobrança enviado pela régua. */
+export type Lembrete = { id: string; cobrancaId: string; etapa: EtapaRegua; data: string };
+export type EtapaRegua = "antes" | "no_dia" | "3_dias" | "7_dias";
+
 export type BancoDados = {
   versao: 1;
   academia: { nome: string };
@@ -163,4 +185,10 @@ export type BancoDados = {
   contatos: ContatoRetencao[];
   notas: Nota[];
   feedbacks: FeedbackTreino[];
+  metas: Meta[];
+  cancelamentos: PedidoCancelamento[];
+  aulas: Aula[];
+  agendamentos: Agendamento[];
+  acessos: Acesso[];
+  lembretes: Lembrete[];
 };

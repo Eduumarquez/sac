@@ -31,7 +31,15 @@ function carregar(): BancoDados {
 
 /** Completa coleções que não existiam em versões anteriores do banco salvo. */
 function migrar(db: BancoDados): BancoDados {
-  return { ...db, notas: db.notas ?? [], feedbacks: db.feedbacks ?? [] };
+  const novo = criarBancoDemo();
+  return {
+    ...db,
+    notas: db.notas ?? [], feedbacks: db.feedbacks ?? [],
+    metas: db.metas ?? novo.metas, cancelamentos: db.cancelamentos ?? [],
+    aulas: db.aulas ?? novo.aulas, agendamentos: db.agendamentos ?? novo.agendamentos,
+    acessos: db.acessos ?? [], lembretes: db.lembretes ?? [],
+    planos: db.planos.some((p) => p.agregador) ? db.planos : [...db.planos, ...novo.planos.filter((p) => p.agregador)],
+  };
 }
 
 function salvar(db: BancoDados) {

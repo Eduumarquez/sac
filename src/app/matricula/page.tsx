@@ -172,7 +172,7 @@ export default function Matricula() {
                 </div>
               </Cartao>
               <div className="grid gap-3 sm:grid-cols-2">
-                {db.planos.map((p) => {
+                {db.planos.filter((p) => !p.agregador).map((p) => {
                   const sel = f.planoId === p.id;
                   return (
                     <button key={p.id} onClick={() => set("planoId", p.id)} aria-pressed={sel}

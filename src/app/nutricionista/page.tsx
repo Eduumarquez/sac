@@ -6,6 +6,7 @@ import { dataISO, formatarData } from "@/lib/datas";
 import { CabecalhoPagina, Carregando, Etiqueta, Indicador, Vazio } from "@/components/ui";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
 import { ListaCarteira } from "@/components/ListaCarteira";
+import { AgendaEquipe } from "@/components/agenda";
 
 export default function AreaNutricionista() {
   const db = useBanco();
@@ -35,6 +36,8 @@ export default function AreaNutricionista() {
         <Indicador rotulo="Retornos em 7 dias" valor={meus.filter((m) => m.estaSemana).length} icone={<CalendarClock size={18} />} />
         <Indicador rotulo="Pendências" valor={meus.filter((m) => m.pend.length || m.atrasado).length} icone={<ClipboardList size={18} />} destaque={meus.some((m) => m.atrasado) ? "vermelho" : undefined} />
       </div>
+
+      <div className="mb-6"><AgendaEquipe db={db} profissionalId={eu} dias={3} titulo="Sua agenda" /></div>
 
       <ListaCarteira
         vazio={<Vazio>Nenhum paciente ainda. Alunos dos planos com nutricionista aparecem aqui após a matrícula.</Vazio>}

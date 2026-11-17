@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Apple, ClipboardCheck, Dumbbell, MessageSquareText, Phone, Send, Smile, UserPlus } from "lucide-react";
+import { Apple, CalendarDays, DoorOpen, ClipboardCheck, Dumbbell, MessageSquareText, Phone, Send, Smile, UserPlus } from "lucide-react";
 import { alterar } from "@/lib/db";
 import type { BancoDados, Sensacao } from "@/lib/tipos";
 import { formatarData, isoAgora, novoId } from "@/lib/datas";
@@ -29,7 +29,8 @@ function eventosDoAluno(db: BancoDados, alunoId: string): Evento[] {
   ];
   for (const n of db.notas.filter((x) => x.alunoId === alunoId)) {
     const p = prof(n.autorId);
-    ev.push({ id: n.id, data: n.data, icone: <MessageSquareText size={15} />, titulo: <>Recado de {p?.nome ?? "alguém da equipe"}</>, texto: n.texto, autor: p ? PAPEL[p.papel] : undefined, destaque: true });
+    const doAluno = n.autorId === alunoId;
+    ev.push({ id: n.id, data: n.data, icone: <MessageSquareText size={15} />, titulo: <>Recado {doAluno ? "do aluno" : `de ${p?.nome ?? "alguém da equipe"}`}</>, texto: n.texto, autor: p ? PAPEL[p.papel] : doAluno ? "pelo app" : undefined, destaque: true });
   }
   for (const f of db.feedbacks.filter((x) => x.alunoId === alunoId)) {
     ev.push({ id: f.id, data: f.data, icone: <Smile size={15} />, titulo: <>Treino {f.divisao.split(" ")[0]} avaliado: {emojiSensacao(f.sensacao)} {SENSACOES.find((s) => s.valor === f.sensacao)?.rotulo}</>, texto: f.comentario ? `“${f.comentario}”` : undefined, destaque: f.sensacao <= 2 });
@@ -46,7 +47,14 @@ function eventosDoAluno(db: BancoDados, alunoId: string): Evento[] {
   for (const c of db.contatos.filter((x) => x.alunoId === alunoId)) {
     ev.push({ id: c.id, data: c.data, icone: <Phone size={15} />, titulo: "Academia entrou em contato", texto: `por ${prof(c.responsavelId)?.nome ?? "recepção"}` });
   }
-  return ev.sort((a, b) => b.data.localeCompare(a.data));
+  const RES: Record<string, string> = { pausou: "pausou o plano", trocou_plano: "trocou de plano", treino_curto: "aceitou um ajuste no treino", cancelou: "cancelou" };
+  for (const c of db.cancelamentos.filter((x) => x.alunoId === alunoId)) {
+    ev.push({ id: c.id, data: c.data, icone: <DoorOpen size={15} />, titulo: <>Pediu para cancelar e {RES[c.resultado]}</>, texto: c.detalhe, autor: c.origem === "app" ? "pelo app" : "na recepção", destaque: true });
+  }
+  for (const g of db.agendamentos.filter((x) => x.alunoId === alunoId)) {
+    ev.push({ id: g.id, data: g.inicio, icone: <CalendarDays size={15} />, titulo: <>{g.tipo === "avaliacao" ? "Avaliação física" : "Consulta"} {g.status === "feito" ? "realizada" : g.status === "faltou" ? "(faltou)" : "marcada"}</>, texto: `com ${prof(g.profissionalId)?.nome ?? ""}` });
+  }
+  return ev.filter((e) => e.data <= new Date(Date.now() + 30 * 86_400_000).toISOString()).sort((a, b) => b.data.localeCompare(a.data));
 }
 
 /** Recados da equipe e histórico do aluno, visível para academia, personal e nutricionista. */

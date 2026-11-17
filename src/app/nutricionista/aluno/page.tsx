@@ -8,6 +8,8 @@ import { Abas, Cartao, Carregando, GraficoLinha, Vazio } from "@/components/ui";
 import { CabecalhoAluno, Frequencia, HistoricoConsultas, PlanoAlimentarVisual, TreinoVisual } from "@/components/aluno";
 import { EditorPlanoAlimentar, FormConsulta } from "@/components/editores";
 import { LinhaDoTempo } from "@/components/equipe";
+import { MetaAluno } from "@/components/meta";
+import { AgendarAtendimento } from "@/components/agenda";
 
 type Aba = "consulta" | "plano" | "evolucao" | "treino" | "equipe";
 
@@ -32,6 +34,7 @@ function Detalhe() {
     <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
       <Link href="/nutricionista/" className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900">← Meus pacientes</Link>
       <CabecalhoAluno db={db} alunoId={id} />
+      <MetaAluno db={db} alunoId={id} autorId={nutriId} />
       <Abas<Aba> atual={aba} aoTrocar={setAba} abas={[{ id: "consulta", rotulo: "Consultas" }, { id: "plano", rotulo: "Plano alimentar" }, { id: "evolucao", rotulo: "Evolução" }, { id: "treino", rotulo: "Treino" }, { id: "equipe", rotulo: "Equipe" }]} />
 
       {aba === "equipe" && <LinhaDoTempo db={db} alunoId={id} autorId={nutriId} />}
@@ -41,7 +44,8 @@ function Detalhe() {
           <Cartao titulo="Nova consulta" acao={!registrando && <button className="rounded-lg px-2 py-1 text-sm font-medium text-marca-700 hover:bg-marca-50" onClick={() => setRegistrando(true)}>Registrar</button>}>
             {registrando ? <FormConsulta alunoId={id} nutricionistaId={nutriId} aoSalvar={() => setRegistrando(false)} /> : <p className="text-sm text-zinc-500">Registre peso, adesão ao plano, anotações e o próximo retorno.</p>}
           </Cartao>
-          <Cartao titulo="Histórico"><HistoricoConsultas db={db} alunoId={id} /></Cartao>
+          <AgendarAtendimento db={db} alunoId={id} profissionalId={nutriId} tipo="consulta" />
+          <Cartao titulo="Histórico" className="sm:col-span-2"><HistoricoConsultas db={db} alunoId={id} /></Cartao>
         </div>
       )}
 
