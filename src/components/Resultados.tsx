@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, HeartHandshake, Repeat, Smile, Wallet } from "lucide-react";
+import { linkWhats } from "@/lib/mascaras";
 import type { BancoDados } from "@/lib/tipos";
 import { riscoDoAluno, statusCobranca } from "@/lib/regras";
 import { DIA_MS, formatarDinheiro } from "@/lib/datas";
@@ -96,7 +97,7 @@ export function Resultados({ db }: { db: BancoDados }) {
               <li key={a.id} className="flex items-center gap-2 text-sm">
                 <Avatar nome={a.nome} tamanho="sm" />
                 <span className="min-w-0 flex-1"><span className="font-medium">{a.nome}</span><span className="block text-xs text-zinc-500">{visitas} visitas em 30 dias</span></span>
-                <a href={`https://wa.me/${a.telefone}?text=${encodeURIComponent(`Oi ${a.nome.split(" ")[0]}! Você já é de casa: ${visitas} treinos este mês. Que tal um personal só seu no plano ${planoConv.nome}? Primeiro mês com desconto.`)}`} target="_blank" rel="noreferrer"
+                <a href={linkWhats(a.telefone, `Oi ${a.nome.split(" ")[0]}! Você já é de casa: ${visitas} treinos este mês. Que tal um personal só seu no plano ${planoConv.nome}? Primeiro mês com desconto.`)} target="_blank" rel="noreferrer"
                   className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"><MessageCircle size={14} className="text-[#25D366]" /> Oferecer</a>
               </li>
             ))}

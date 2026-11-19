@@ -4,11 +4,11 @@ import { useState } from "react";
 import { CalendarDays, CalendarPlus, Check, ClipboardCheck, Apple, Users } from "lucide-react";
 import { alterar } from "@/lib/db";
 import type { Agendamento, Aula, BancoDados } from "@/lib/tipos";
-import { dataISO, novoId } from "@/lib/datas";
-import { Botao, Campo, Cartao, Etiqueta, Vazio, avisar, estiloInput } from "./ui";
+import { dataISO, horariosEntre, novoId } from "@/lib/datas";
+import { Botao, Campo, Cartao, Escolha, Etiqueta, Vazio, avisar, estiloInput } from "./ui";
 
 export const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-export function rotuloDia(iso: string) {
+function rotuloDia(iso: string) {
   const d = new Date(iso);
   const hoje = dataISO(new Date());
   const amanha = dataISO(new Date(Date.now() + 86_400_000));
@@ -84,6 +84,8 @@ export function AgendaEquipe({ db, profissionalId, dias = 7, titulo = "Agenda" }
 }
 
 /** Formulário curto para marcar avaliação (personal) ou consulta (nutri). */
+const HORAS_AGENDA = horariosEntre(6, 22);
+
 export function AgendarAtendimento({ alunoId, profissionalId, tipo, db }: { alunoId: string; profissionalId: string; tipo: Agendamento["tipo"]; db: BancoDados }) {
   const amanha = dataISO(new Date(Date.now() + 86_400_000));
   const [dia, setDia] = useState(amanha);
@@ -99,7 +101,7 @@ export function AgendarAtendimento({ alunoId, profissionalId, tipo, db }: { alun
       {proximo && <p className="mb-3 rounded-xl bg-marca-50 px-3 py-2 text-sm text-marca-900">Já marcada: {rotuloDia(proximo.inicio).toLowerCase()} às {hora(proximo.inicio)}.</p>}
       <div className="flex flex-wrap items-end gap-2">
         <Campo rotulo="Dia"><input type="date" className={estiloInput} value={dia} min={dataISO(new Date())} onChange={(e) => setDia(e.target.value)} /></Campo>
-        <Campo rotulo="Hora"><input type="time" className={estiloInput} value={h} step={900} onChange={(e) => setH(e.target.value)} /></Campo>
+        <Campo rotulo="Hora"><Escolha rotulo="Hora" className="w-28" valor={h} opcoes={HORAS_AGENDA.map((x) => ({ valor: x, texto: x }))} aoMudar={setH} /></Campo>
         <Botao onClick={salvar}>Marcar</Botao>
       </div>
     </Cartao>

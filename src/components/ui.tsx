@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useSyncExternalStore, type ReactNode } from "react";
-import { CheckCircle2, Inbox, Loader2, X } from "lucide-react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Check, CheckCircle2, ChevronDown, Inbox, Loader2, TriangleAlert, X } from "lucide-react";
 import type { NivelRisco } from "@/lib/risco";
 import { iniciais } from "@/lib/mascaras";
 
@@ -77,12 +77,26 @@ export function BotaoLink({ href, children, variante = "primario", icone, classN
 
 /* ---------------- formulários ---------------- */
 
-export function Campo({ rotulo, children, dica, erro }: { rotulo: string; children: ReactNode; dica?: string; erro?: string | false }) {
+/**
+ * Rótulo + campo. Com `grupo`, vira um grupo (para botões de escolha): um <label>
+ * em volta de botões faria o toque no rótulo marcar o primeiro botão.
+ */
+export function Campo({ rotulo, children, dica, erro, grupo }: { rotulo: string; children: ReactNode; dica?: string; erro?: string | false; grupo?: boolean }) {
+  const rodape = erro ? <span className="mt-1 block text-xs text-red-600">{erro}</span> : dica && <span className="mt-1 block text-xs text-zinc-500">{dica}</span>;
+  if (grupo) {
+    return (
+      <div role="group" aria-label={rotulo} className="block text-sm">
+        <span className="mb-1.5 block font-medium text-zinc-700">{rotulo}</span>
+        {children}
+        {rodape}
+      </div>
+    );
+  }
   return (
     <label className="block text-sm">
       <span className="mb-1.5 block font-medium text-zinc-700">{rotulo}</span>
       {children}
-      {erro ? <span className="mt-1 block text-xs text-red-600">{erro}</span> : dica && <span className="mt-1 block text-xs text-zinc-500">{dica}</span>}
+      {rodape}
     </label>
   );
 }
@@ -332,6 +346,76 @@ export function BarraHorizontal({ rotulo, valor, total, cor = "bg-marca-500", de
     <div>
       <div className="mb-1 flex justify-between text-sm"><span className="text-zinc-700">{rotulo}</span><span className="font-medium text-zinc-900">{detalhe ?? valor}</span></div>
       <div className="h-2 overflow-hidden rounded-full bg-zinc-100"><div className={`h-full rounded-full ${cor}`} style={{ width: `${pct}%` }} /></div>
+    </div>
+  );
+}
+
+/* ---------------- escolhas ---------------- */
+
+const estiloSelect = `${estiloInput} appearance-none bg-white pr-8`;
+
+/** Select com a seta, no mesmo visual dos campos. */
+export function Escolha({ valor, opcoes, aoMudar, rotulo, className = "" }: { valor: string; opcoes: { valor: string; texto: string; grupo?: string }[]; aoMudar: (v: string) => void; rotulo: string; className?: string }) {
+  const grupos = [...new Set(opcoes.map((o) => o.grupo ?? ""))];
+  const linhas = (lista: typeof opcoes) => lista.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>);
+  return (
+    <span className={`relative block ${className}`}>
+      <select aria-label={rotulo} className={estiloSelect} value={valor} onChange={(e) => aoMudar(e.target.value)}>
+        {grupos.map((g) => (g ? <optgroup key={g} label={g}>{linhas(opcoes.filter((o) => o.grupo === g))}</optgroup> : linhas(opcoes.filter((o) => !o.grupo))))}
+      </select>
+      <ChevronDown size={16} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+    </span>
+  );
+}
+
+export function Chip({ ativo, children, aoTocar, alerta }: { ativo: boolean; children: React.ReactNode; aoTocar: () => void; alerta?: string }) {
+  const cor = alerta
+    ? ativo ? "bg-red-600 text-white" : "bg-red-50 text-red-800 ring-1 ring-red-200 hover:ring-red-400"
+    : ativo ? "bg-marca-700 text-white" : "bg-white text-zinc-700 ring-1 ring-zinc-200 hover:ring-marca-400";
+  return (
+    <button type="button" onClick={aoTocar} aria-pressed={ativo} title={alerta}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm transition ${cor}`}>
+      {alerta ? <TriangleAlert size={14} /> : ativo && <Check size={14} />}{children}
+      {alerta && <span className="sr-only"> ({alerta})</span>}
+    </button>
+  );
+}
+
+/**
+ * Várias escolhas em botões, com um campo "Outro" opcional para o que não está na lista.
+ * O valor é a lista de textos escolhidos, na ordem em que foram tocados.
+ */
+export function EscolhaMultipla({ opcoes, valor, aoMudar, outro, rotuloOutro = "Outro" }: { opcoes: string[]; valor: string[]; aoMudar: (v: string[]) => void; outro?: string; rotuloOutro?: string }) {
+  const [texto, setTexto] = useState("");
+  const extras = valor.filter((v) => !opcoes.includes(v));
+  const alternar = (o: string) => aoMudar(valor.includes(o) ? valor.filter((x) => x !== o) : [...valor, o]);
+  function incluir() {
+    const t = texto.trim();
+    if (t && !valor.includes(t)) aoMudar([...valor, t]);
+    setTexto("");
+  }
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {opcoes.map((o) => <Chip key={o} ativo={valor.includes(o)} aoTocar={() => alternar(o)}>{o}</Chip>)}
+        {extras.map((o) => <Chip key={o} ativo aoTocar={() => alternar(o)}>{o}</Chip>)}
+      </div>
+      {outro && (
+        <div className="mt-2 flex gap-2">
+          <input className={`${estiloInput} min-w-0 flex-1`} placeholder={outro} aria-label={rotuloOutro} value={texto}
+            onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); incluir(); } }} />
+          <Botao type="button" variante="secundario" tamanho="sm" onClick={incluir} disabled={!texto.trim()}>Incluir</Botao>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Uma escolha só, em botões. Tocar de novo desmarca quando `opcional`. */
+export function EscolhaUnica({ opcoes, valor, aoMudar, opcional }: { opcoes: string[]; valor: string; aoMudar: (v: string) => void; opcional?: boolean }) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="radiogroup">
+      {opcoes.map((o) => <Chip key={o} ativo={valor === o} aoTocar={() => aoMudar(valor === o && opcional ? "" : o)}>{o}</Chip>)}
     </div>
   );
 }

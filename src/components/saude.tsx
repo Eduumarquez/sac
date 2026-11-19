@@ -6,10 +6,11 @@ import { alterar } from "@/lib/db";
 import type { BancoDados, ValorExame } from "@/lib/tipos";
 import { foraDaReferencia } from "@/lib/regras";
 import { dataISO, formatarData, isoAgora, novoId } from "@/lib/datas";
-import { Botao, Campo, Cartao, Etiqueta, avisar, estiloInput } from "./ui";
+import { Botao, Campo, Cartao, EscolhaUnica, Etiqueta, avisar, estiloInput } from "./ui";
+import { HA_QUANTO, LADOS, REGIOES, TIPOS_QUEIXA, textoQueixa } from "@/lib/fisio";
 
 /** Marcadores mais pedidos, com faixas de referência gerais para adultos (cada laboratório tem as suas). */
-export const MARCADORES: Omit<ValorExame, "valor">[] = [
+const MARCADORES: Omit<ValorExame, "valor">[] = [
   { marcador: "Glicose em jejum", unidade: "mg/dL", refMin: 70, refMax: 99 },
   { marcador: "Colesterol total", unidade: "mg/dL", refMax: 190 },
   { marcador: "HDL", unidade: "mg/dL", refMin: 40 },
@@ -110,16 +111,17 @@ export function EncaminharFisio({ db, alunoId, deId }: { db: BancoDados; alunoId
   const fisio = db.profissionais.find((p) => p.papel === "fisioterapeuta");
   const atual = db.encaminhamentos.filter((e) => e.alunoId === alunoId).sort((a, b) => b.data.localeCompare(a.data))[0];
   const [abrindo, setAbrindo] = useState(false);
-  const [motivo, setMotivo] = useState("");
+  const [q, setQ] = useState({ tipo: "Dor", regiao: "", lado: "", tempo: "", detalhe: "" });
   if (!fisio) return null;
+  const motivo = q.regiao ? textoQueixa(q) : "";
   function enviar() {
-    if (!motivo.trim()) return;
+    if (!motivo) return;
     alterar((d) => ({
       ...d,
-      encaminhamentos: [...d.encaminhamentos, { id: novoId(), alunoId, deId, paraId: fisio!.id, data: isoAgora(), motivo: motivo.trim(), status: "aberto" }],
+      encaminhamentos: [...d.encaminhamentos, { id: novoId(), alunoId, deId, paraId: fisio!.id, data: isoAgora(), motivo, status: "aberto" }],
     }));
     avisar(`Encaminhado para ${fisio!.nome}`);
-    setAbrindo(false); setMotivo("");
+    setAbrindo(false); setQ({ tipo: "Dor", regiao: "", lado: "", tempo: "", detalhe: "" });
   }
   const ST: Record<string, string> = { aberto: "Aguardando o fisioterapeuta", em_atendimento: "Em atendimento", liberado: "Liberado para treinar" };
   return (
@@ -135,8 +137,13 @@ export function EncaminharFisio({ db, alunoId, deId }: { db: BancoDados; alunoId
       {!atual && !abrindo && <p className="text-sm text-zinc-500">Dor, lesão ou limitação? Encaminhe para {fisio.nome} ({fisio.registro}). A orientação volta para o personal.</p>}
       {abrindo && (
         <div className="space-y-2">
-          <Campo rotulo="O que está acontecendo?"><textarea className={estiloInput} rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ex.: dor no ombro direito no supino há 2 semanas" /></Campo>
-          <div className="flex gap-2"><Botao onClick={enviar} disabled={!motivo.trim()}>Encaminhar para {fisio.nome.split(" ")[0]}</Botao><Botao variante="secundario" onClick={() => setAbrindo(false)}>Cancelar</Botao></div>
+          <Campo rotulo="O que é?" grupo><EscolhaUnica opcoes={TIPOS_QUEIXA} valor={q.tipo} aoMudar={(v) => setQ({ ...q, tipo: v || "Dor" })} /></Campo>
+          <Campo rotulo="Onde?" grupo><EscolhaUnica opcoes={REGIOES} valor={q.regiao} aoMudar={(v) => setQ({ ...q, regiao: v })} opcional /></Campo>
+          <Campo rotulo="Lado" grupo><EscolhaUnica opcoes={LADOS} valor={q.lado} aoMudar={(v) => setQ({ ...q, lado: v })} opcional /></Campo>
+          <Campo rotulo="Desde quando?" grupo><EscolhaUnica opcoes={HA_QUANTO} valor={q.tempo} aoMudar={(v) => setQ({ ...q, tempo: v })} opcional /></Campo>
+          <Campo rotulo="Detalhe (opcional)"><input className={estiloInput} value={q.detalhe} onChange={(e) => setQ({ ...q, detalhe: e.target.value })} placeholder="Ex.: piora no supino" /></Campo>
+          {motivo && <p className="rounded-xl bg-zinc-50 p-2.5 text-sm text-zinc-700"><strong>Vai para o fisio:</strong> {motivo}</p>}
+          <div className="flex gap-2"><Botao onClick={enviar} disabled={!motivo}>Encaminhar para {fisio.nome.split(" ")[0]}</Botao><Botao variante="secundario" onClick={() => setAbrindo(false)}>Cancelar</Botao></div>
         </div>
       )}
     </Cartao>

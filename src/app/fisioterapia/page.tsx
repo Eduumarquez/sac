@@ -6,7 +6,9 @@ import { CheckCircle2, Clock, Stethoscope } from "lucide-react";
 import { alterar, useBanco } from "@/lib/db";
 import type { Encaminhamento } from "@/lib/tipos";
 import { formatarData, isoAgora, novoId } from "@/lib/datas";
-import { Avatar, Botao, CabecalhoPagina, Campo, Carregando, Etiqueta, Indicador, Vazio, avisar, estiloInput } from "@/components/ui";
+import { Avatar, Botao, CabecalhoPagina, Campo, Carregando, EscolhaMultipla, EscolhaUnica, Etiqueta, Indicador, Vazio, avisar } from "@/components/ui";
+import { ORIENTACOES_FISIO, PERIODOS, textoLiberacao } from "@/lib/fisio";
+import { linkWhats } from "@/lib/mascaras";
 import { SeletorPessoa, usePessoaSelecionada } from "@/components/SeletorPessoa";
 
 const ST: Record<Encaminhamento["status"], string> = { aberto: "Aguardando", em_atendimento: "Em atendimento", liberado: "Liberado" };
@@ -16,7 +18,9 @@ export default function AreaFisio() {
   const fisios = db?.profissionais.filter((p) => p.papel === "fisioterapeuta") ?? [];
   const eu = usePessoaSelecionada(fisios, "fisioterapeuta");
   const [liberando, setLiberando] = useState<string | null>(null);
-  const [texto, setTexto] = useState("");
+  const [orient, setOrient] = useState<string[]>([]);
+  const [periodo, setPeriodo] = useState("");
+  const texto = textoLiberacao(orient, periodo);
   if (!db) return <Carregando />;
   const meus = db.encaminhamentos.filter((e) => e.paraId === eu).sort((a, b) => a.data.localeCompare(b.data));
   const abertos = meus.filter((e) => e.status !== "liberado");
@@ -25,14 +29,14 @@ export default function AreaFisio() {
 
   const atender = (e: Encaminhamento) => { alterar((d) => ({ ...d, encaminhamentos: d.encaminhamentos.map((x) => (x.id === e.id ? { ...x, status: "em_atendimento" } : x)) })); avisar("Atendimento iniciado"); };
   function liberar(e: Encaminhamento) {
-    if (!texto.trim()) return;
+    if (!texto) return;
     alterar((d) => ({
       ...d,
-      encaminhamentos: d.encaminhamentos.map((x) => (x.id === e.id ? { ...x, status: "liberado", liberacao: texto.trim(), liberadoEm: isoAgora() } : x)),
-      notas: [...d.notas, { id: novoId(), alunoId: e.alunoId, autorId: eu!, data: isoAgora(), texto: `Liberado para treinar. Orientação: ${texto.trim()}` }],
+      encaminhamentos: d.encaminhamentos.map((x) => (x.id === e.id ? { ...x, status: "liberado", liberacao: texto, liberadoEm: isoAgora() } : x)),
+      notas: [...d.notas, { id: novoId(), alunoId: e.alunoId, autorId: eu!, data: isoAgora(), texto: `Liberado para treinar. Orientação: ${texto}` }],
     }));
     avisar("Aluno liberado. O personal já vê a orientação.");
-    setLiberando(null); setTexto("");
+    setLiberando(null); setOrient([]); setPeriodo("");
   }
 
   return (
@@ -68,14 +72,16 @@ export default function AreaFisio() {
                 </div>
                 {liberando === e.id ? (
                   <div className="mt-3 space-y-2">
-                    <Campo rotulo="Orientação para o personal"><textarea className={estiloInput} rows={3} value={texto} onChange={(ev) => setTexto(ev.target.value)} placeholder="Ex.: evitar agachamento profundo por 4 semanas; leg press até 90 graus liberado." /></Campo>
-                    <div className="flex gap-2"><Botao onClick={() => liberar(e)} disabled={!texto.trim()}>Liberar para treinar</Botao><Botao variante="secundario" onClick={() => setLiberando(null)}>Cancelar</Botao></div>
+                    <Campo rotulo="Orientação para o personal" grupo><EscolhaMultipla opcoes={ORIENTACOES_FISIO} valor={orient} aoMudar={setOrient} outro="Outra orientação (ex.: leg press até 90 graus)" rotuloOutro="Outra orientação" /></Campo>
+                    <Campo rotulo="Por quanto tempo?" grupo><EscolhaUnica opcoes={PERIODOS} valor={periodo} aoMudar={setPeriodo} opcional /></Campo>
+                    {texto && <p className="rounded-xl bg-sky-50 p-2.5 text-sm text-sky-900"><strong>O personal vai ver:</strong> {texto}</p>}
+                    <div className="flex gap-2"><Botao onClick={() => liberar(e)} disabled={!texto}>Liberar para treinar</Botao><Botao variante="secundario" onClick={() => setLiberando(null)}>Cancelar</Botao></div>
                   </div>
                 ) : (
                   <div className="mt-3 flex flex-wrap gap-2 sm:pl-[52px]">
                     {e.status === "aberto" && <Botao variante="secundario" onClick={() => atender(e)}>Iniciar atendimento</Botao>}
-                    <Botao onClick={() => { setLiberando(e.id); setTexto(""); }}>Liberar com orientação</Botao>
-                    <a href={`https://wa.me/${a.telefone}?text=${encodeURIComponent(`Oi ${a.nome.split(" ")[0]}! Aqui é ${nomeEu}, fisioterapeuta da academia. Recebi seu encaminhamento. Qual horário fica bom para uma avaliação?`)}`} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-xl border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50">Chamar no WhatsApp</a>
+                    <Botao onClick={() => { setLiberando(e.id); setOrient([]); setPeriodo(""); }}>Liberar com orientação</Botao>
+                    <a href={linkWhats(a.telefone, `Oi ${a.nome.split(" ")[0]}! Aqui é ${nomeEu}, fisioterapeuta da academia. Recebi seu encaminhamento. Qual horário fica bom para uma avaliação?`)} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-xl border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50">Chamar no WhatsApp</a>
                   </div>
                 )}
               </li>

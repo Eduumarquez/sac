@@ -85,3 +85,19 @@ export const TREINOS_FORA: { id: "casa" | "viagem"; titulo: string; descricao: s
     ] },
   },
 ];
+
+/** Opções do editor de treino. */
+export const OPCOES_SERIES = [1, 2, 3, 4, 5, 6];
+export const OPCOES_REPETICOES = ["6", "8", "10", "12", "15", "20", "6 a 8", "8 a 12", "10 a 15", "até a falha", "30s", "45s", "1 min", "2 min"];
+export const NOMES_DIVISAO = [
+  "A - Corpo inteiro", "B - Cardio e core",
+  "A - Superiores", "B - Inferiores",
+  "A - Peito e tríceps", "B - Costas e bíceps", "C - Pernas", "D - Ombros e abdômen",
+  "A - Empurrar", "B - Puxar", "C - Pernas e glúteos",
+];
+
+/** Exercícios do catálogo para escolher, agrupados por músculo. */
+export const opcoesExercicio = () =>
+  Object.entries(EXERCICIOS)
+    .map(([nome, i]) => ({ valor: nome, texto: nome, grupo: i.grupo }))
+    .sort((a, b) => a.grupo.localeCompare(b.grupo) || a.texto.localeCompare(b.texto));

@@ -6,8 +6,8 @@ import { alterar, useBanco } from "@/lib/db";
 import { sequenciaSemanas, statusCobranca } from "@/lib/regras";
 import { formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { saudacao } from "@/lib/mascaras";
-import { Abas, Cartao, Carregando, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
-import { ComposicaoCorporal, EvolucaoCargas } from "@/components/aluno";
+import { Abas, Cartao, Carregando, EscolhaMultipla, Etiqueta, GraficoLinha, Vazio, avisar } from "@/components/ui";
+import { AvisoRestricoes, ComposicaoCorporal, EvolucaoCargas } from "@/components/aluno";
 import { ExamesAluno } from "@/components/saude";
 import { SessaoTreino } from "@/components/treino";
 import { LojaAluno } from "@/components/loja";
@@ -30,6 +30,9 @@ const ABAS: { id: Aba; rotulo: string; icone: typeof Dumbbell }[] = [
   { id: "conta", rotulo: "Loja e conta", icone: ShoppingBag },
 ];
 
+const MOTIVOS_RUIM = ["Pesado demais", "Senti dor", "Aparelho ocupado", "Faltou tempo", "Estava cansado", "Não entendi um exercício"];
+const MOTIVOS_BOM = ["Consegui subir carga", "Treino na medida", "Leve demais", "Adorei o treino", "Aparelho ocupado"];
+
 export default function AppAluno() {
   const db = useBanco();
   const alunos = db?.alunos.filter((a) => a.status !== "cancelado") ?? [];
@@ -40,7 +43,7 @@ export default function AppAluno() {
   const [concluiu, setConcluiu] = useState(false);
   const [subConta, setSubConta] = useState<"loja" | "conta">("loja");
   const [sensacao, setSensacao] = useState<Sensacao | null>(null);
-  const [comentario, setComentario] = useState("");
+  const [comentario, setComentario] = useState<string[]>([]);
   const [verQR, setVerQR] = useState(false);
   const [pagando, setPagando] = useState<Cobranca | null>(null);
   const [cancelando, setCancelando] = useState(false);
@@ -84,9 +87,9 @@ export default function AppAluno() {
   }
   function enviarFeedback() {
     if (!sensacao || !div) return;
-    alterar((d) => ({ ...d, feedbacks: [...d.feedbacks, { id: novoId(), alunoId: aluno!.id, data: isoAgora(), divisao: div.nome, sensacao, comentario: comentario.trim() || undefined }] }));
+    alterar((d) => ({ ...d, feedbacks: [...d.feedbacks, { id: novoId(), alunoId: aluno!.id, data: isoAgora(), divisao: div.nome, sensacao, comentario: comentario.join(", ") || undefined }] }));
     setSensacao(null);
-    setComentario("");
+    setComentario([]);
     avisar(personal ? `Obrigado! ${personal.nome.split(" ")[0]} vai ver como foi.` : "Obrigado pelo retorno!");
   }
   function registrar(exercicio: string, valor: number) {
@@ -188,8 +191,8 @@ export default function AppAluno() {
                     </div>
                     {sensacao && (
                       <div className="mt-3 space-y-2">
-                        <input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder={sensacao <= 2 ? "O que não foi legal? (opcional)" : "Quer comentar algo? (opcional)"}
-                          aria-label="Comentário sobre o treino" className="w-full rounded-xl border border-marca-200 bg-white px-3 py-2.5 text-base focus:border-marca-500 focus:outline-none sm:text-sm" />
+                        <p className="text-sm font-medium text-marca-900">{sensacao <= 2 ? "O que não foi legal?" : "Quer contar algo?"} <span className="font-normal text-marca-800/70">(opcional)</span></p>
+                        <EscolhaMultipla opcoes={sensacao <= 2 ? MOTIVOS_RUIM : MOTIVOS_BOM} valor={comentario} aoMudar={setComentario} />
                         <button onClick={enviarFeedback} className="w-full rounded-xl bg-marca-700 py-2.5 text-sm font-semibold text-white hover:bg-marca-800">Enviar</button>
                       </div>
                     )}
@@ -223,6 +226,7 @@ export default function AppAluno() {
                   <h2 className="text-lg font-semibold">Meu plano alimentar</h2>
                   <Etiqueta cor="verde">{plano.metaKcal} kcal/dia</Etiqueta>
                 </div>
+                <AvisoRestricoes restricoes={plano.restricoes} />
                 <ol className="relative space-y-3 border-l-2 border-zinc-200 pl-5">
                   {plano.refeicoes.map((r, i) => {
                     const proxima = i === proximaRefeicao;

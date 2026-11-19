@@ -128,6 +128,8 @@ export type PlanoAlimentar = {
   ativo: boolean;
   metaKcal: number;
   proteinaG?: number;
+  /** Alergias, intolerâncias e restrições (ex.: "Lactose", "Vegano" ou outra escrita pela nutri). */
+  restricoes?: string[];
   refeicoes: Refeicao[];
   orientacoes: string;
 };

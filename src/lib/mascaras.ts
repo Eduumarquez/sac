@@ -41,3 +41,6 @@ export function saudacao(d = new Date()): string {
   const h = d.getHours();
   return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 }
+
+/** Link do WhatsApp para o número (só dígitos, com 55) com uma mensagem pronta. */
+export const linkWhats = (tel: string, texto?: string) => `https://wa.me/${digitos(tel)}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;

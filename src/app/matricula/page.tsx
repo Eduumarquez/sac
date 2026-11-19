@@ -8,7 +8,7 @@ import { PERGUNTAS_PARQ, gerarCobrancas, precisaAtestado, profissionalMenosOcupa
 import { formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
 import { cpfValido, emailValido, mascaraCPF, mascaraTelefone, telefoneValido } from "@/lib/mascaras";
 import type { Aluno, Objetivo } from "@/lib/tipos";
-import { Avatar, Botao, BotaoLink, Campo, Cartao, Carregando, Etiqueta, estiloInput } from "@/components/ui";
+import { Avatar, Botao, BotaoLink, Campo, Cartao, Carregando, EscolhaMultipla, Etiqueta, estiloInput } from "@/components/ui";
 
 const OBJETIVOS: { id: Objetivo; rotulo: string; emoji: string; plano: string }[] = [
   { id: "emagrecimento", rotulo: "Emagrecer", emoji: "🔥", plano: "pl-completo" },
@@ -33,6 +33,10 @@ const VAZIO: Form = {
   parq: {}, lesoes: "", medicamentos: "",
   aceiteTermos: false, consentimentoSaude: false, metodo: "pix",
 };
+
+const LESOES = ["Joelho", "Ombro", "Coluna", "Quadril", "Tornozelo", "Punho ou cotovelo", "Já fiz cirurgia"];
+const REMEDIOS = ["Pressão alta", "Diabetes", "Tireoide", "Colesterol", "Ansiedade ou depressão", "Asma"];
+const separarLista = (t: string) => t.split(/,\s*/).filter(Boolean);
 
 export default function Matricula() {
   const db = useBanco();
@@ -219,8 +223,12 @@ export default function Matricula() {
                 ))}
               </ul>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Campo rotulo="Lesões ou cirurgias (opcional)"><input className={estiloInput} value={f.lesoes} onChange={(e) => set("lesoes", e.target.value)} placeholder="Ex.: dor no joelho direito" /></Campo>
-                <Campo rotulo="Remédios de uso contínuo (opcional)"><input className={estiloInput} value={f.medicamentos} onChange={(e) => set("medicamentos", e.target.value)} /></Campo>
+                <Campo rotulo="Lesões ou cirurgias (se tiver)" grupo>
+                  <EscolhaMultipla opcoes={LESOES} valor={separarLista(f.lesoes)} aoMudar={(v) => set("lesoes", v.join(", "))} outro="Outra" rotuloOutro="Outra lesão ou cirurgia" />
+                </Campo>
+                <Campo rotulo="Remédio de uso contínuo para (se tiver)" grupo>
+                  <EscolhaMultipla opcoes={REMEDIOS} valor={separarLista(f.medicamentos)} aoMudar={(v) => set("medicamentos", v.join(", "))} outro="Outro" rotuloOutro="Outro remédio" />
+                </Campo>
               </div>
               {precisaAtestado(f.parq) && <p className="mt-4 flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><TriangleAlert size={18} className="shrink-0" /> Como você respondeu “sim” a alguma pergunta, vamos pedir um atestado médico antes do primeiro treino.</p>}
             </Cartao>

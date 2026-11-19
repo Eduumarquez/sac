@@ -129,14 +129,15 @@ export function criarBancoDemo(hoje = new Date()): BancoDados {
   const planosAlimentares = ["a1", "a3", "a6"].map((alunoId) => ({
     id: "pa-" + alunoId, alunoId, nutricionistaId: "p-nutri1", criadoEm: d(alunoId === "a6" ? 7 : 35), ativo: true,
     metaKcal: alunoId === "a3" ? 2000 : 1700, proteinaG: alunoId === "a3" ? 110 : 120,
+    restricoes: alunoId === "a1" ? ["Castanhas"] : [],
     refeicoes: [
-      { nome: "Café da manhã", horario: "07:00", itens: "2 ovos mexidos, 1 fatia de pão integral, 1 fruta" },
-      { nome: "Lanche", horario: "10:00", itens: "1 iogurte natural, 1 colher de aveia" },
-      { nome: "Almoço", horario: "12:30", itens: "4 col. de arroz, 1 concha de feijão, 120 g de frango, salada à vontade" },
-      { nome: "Pré-treino", horario: "16:30", itens: "1 banana com 1 col. de pasta de amendoim" },
-      { nome: "Jantar", horario: "20:00", itens: "120 g de peixe ou frango, legumes, 2 col. de arroz" },
+      { nome: "Café da manhã", horario: "07:00", itens: "2 ovos mexidos, 1 fatia de pão integral, 1 fruta da estação" },
+      { nome: "Lanche da manhã", horario: "10:00", itens: "1 iogurte natural, 2 colheres de aveia" },
+      { nome: "Almoço", horario: "12:30", itens: "4 colheres de arroz, 1 concha de feijão, 120 g de frango grelhado, salada verde à vontade" },
+      { nome: "Pré-treino", horario: "17:00", itens: "1 banana, 1 colher de pasta de amendoim" },
+      { nome: "Jantar", horario: "20:00", itens: "120 g de peixe, legumes cozidos, 4 colheres de arroz integral" },
     ],
-    orientacoes: "Beber pelo menos 2,5 L de água por dia. Evitar refrigerante e doces durante a semana.",
+    orientacoes: "Beber pelo menos 2,5 L de água por dia. Reduzir açúcar e doces durante a semana.",
   }));
 
   const consultas = [

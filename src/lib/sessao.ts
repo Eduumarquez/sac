@@ -80,7 +80,7 @@ export function sair() { gravar(""); }
 const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** E-mail de acesso de cada pessoa da equipe na demonstração. */
-export const emailEquipe = (nome: string) => `${semAcento(nome.split(" ")[0])}@novaera.com`;
+const emailEquipe = (nome: string) => `${semAcento(nome.split(" ")[0])}@novaera.com`;
 
 export type Conta = { email: string; sessao: Sessao; detalhe: string };
 

@@ -38,3 +38,10 @@ export const novoId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+/** Horários de meia em meia hora entre `de` e `ate` (horas cheias), ex.: ["06:00", "06:30", ...]. */
+export function horariosEntre(de: number, ate: number): string[] {
+  const lista: string[] = [];
+  for (let m = de * 60; m <= ate * 60; m += 30) lista.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  return lista;
+}

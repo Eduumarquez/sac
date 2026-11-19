@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { BellRing, Copy, MessageCircle, Send, X } from "lucide-react";
+import { linkWhats } from "@/lib/mascaras";
 import { alterar } from "@/lib/db";
 import type { BancoDados, Cobranca } from "@/lib/tipos";
 import { ETAPAS_REGUA, lembretesDeHoje, mensagemCobranca } from "@/lib/regras";
@@ -87,7 +88,7 @@ export function ReguaCobranca({ db }: { db: BancoDados }) {
                   <p className="text-sm font-medium">{aluno.nome} <span className="font-normal text-zinc-400">· {ETAPAS_REGUA.find((e) => e.id === etapa)?.rotulo}</span></p>
                   <p className="truncate text-sm text-zinc-500">{texto}</p>
                 </div>
-                <a href={`https://wa.me/${aluno.telefone}?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer" onClick={() => registrar([{ cobranca, etapa }])}
+                <a href={linkWhats(aluno.telefone, texto)} target="_blank" rel="noreferrer" onClick={() => registrar([{ cobranca, etapa }])}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50">
                   <MessageCircle size={16} className="text-[#25D366]" /> Enviar
                 </a>

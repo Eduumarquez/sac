@@ -5,6 +5,7 @@ import type { BancoDados, PlanoAlimentar, Treino } from "@/lib/tipos";
 import { PERGUNTAS_PARQ, imc, riscoDoAluno, sequenciaSemanas } from "@/lib/regras";
 import { diasEntre, formatarData, idade } from "@/lib/datas";
 import { MessageCircle, TriangleAlert } from "lucide-react";
+import { linkWhats } from "@/lib/mascaras";
 import { Avatar, Cartao, Etiqueta, EtiquetaRisco, GraficoLinha, Vazio, estiloInput } from "./ui";
 
 const OBJ: Record<string, string> = {
@@ -19,6 +20,7 @@ export function CabecalhoAluno({ db, alunoId }: { db: BancoDados; alunoId: strin
   const plano = db.planos.find((p) => p.id === a.planoId);
   const personal = db.profissionais.find((p) => p.id === a.personalId);
   const nutri = db.profissionais.find((p) => p.id === a.nutricionistaId);
+  const restricoes = db.planosAlimentares.find((p) => p.alunoId === alunoId && p.ativo)?.restricoes ?? [];
   const enc = db.encaminhamentos.filter((e) => e.alunoId === alunoId).sort((x, y) => y.data.localeCompare(x.data))[0];
   return (
     <Cartao>
@@ -33,13 +35,14 @@ export function CabecalhoAluno({ db, alunoId }: { db: BancoDados; alunoId: strin
             <Etiqueta>{idade(a.nascimento)} anos</Etiqueta>
             <Etiqueta>{OBJ[a.objetivo]}</Etiqueta>
             <Etiqueta>Plano {plano?.nome}</Etiqueta>
+            {restricoes.length > 0 && <Etiqueta cor="vermelho"><TriangleAlert size={12} /> {restricoes.join(", ")}</Etiqueta>}
             <Etiqueta>{diasEntre(new Date(a.matriculadoEm), new Date())} dias de casa</Etiqueta>
           </div>
           <p className="mt-2 text-sm text-zinc-500">
             {personal ? `Personal: ${personal.nome}` : "Professor do salão"}{nutri ? ` · Nutri: ${nutri.nome}` : ""}
           </p>
         </div>
-        <a href={`https://wa.me/${a.telefone}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50">
+        <a href={linkWhats(a.telefone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50">
           <MessageCircle size={16} className="text-[#25D366]" /> WhatsApp
         </a>
       </div>
@@ -168,11 +171,23 @@ export function TreinoVisual({ treino }: { treino?: Treino }) {
   );
 }
 
+/** Faixa vermelha com as alergias e restrições do plano alimentar. */
+export function AvisoRestricoes({ restricoes }: { restricoes?: string[] }) {
+  if (!restricoes?.length) return null;
+  return (
+    <p className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-900">
+      <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+      <span><strong>Alergias e restrições:</strong> {restricoes.join(", ")}</span>
+    </p>
+  );
+}
+
 export function PlanoAlimentarVisual({ plano }: { plano?: PlanoAlimentar }) {
   if (!plano) return <Vazio>Nenhum plano alimentar ativo.</Vazio>;
   return (
     <div>
       <p className="text-sm text-zinc-600">Meta: <strong>{plano.metaKcal} kcal</strong>{plano.proteinaG ? ` · ${plano.proteinaG} g de proteína` : ""} · desde {formatarData(plano.criadoEm)}</p>
+      <AvisoRestricoes restricoes={plano.restricoes} />
       <ul className="mt-3 space-y-2">
         {plano.refeicoes.map((r, i) => (
           <li key={i} className="rounded-xl bg-zinc-50 p-3 text-sm">

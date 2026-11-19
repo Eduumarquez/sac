@@ -19,7 +19,7 @@ const CATS: { id: CategoriaProduto | "tudo"; rotulo: string }[] = [
 const fisico = (c: CategoriaProduto) => c === "suplemento" || c === "acessorio";
 
 /** Pacotes e serviços comprados pelo aluno, com saldo de sessões. */
-export function MeusPacotes({ db, alunoId }: { db: BancoDados; alunoId: string }) {
+function MeusPacotes({ db, alunoId }: { db: BancoDados; alunoId: string }) {
   const meus = db.creditos.filter((c) => c.alunoId === alunoId);
   if (!meus.length) return null;
   return (

@@ -7,7 +7,7 @@ import { alterar, useBanco } from "@/lib/db";
 import { mensagemSugerida } from "@/lib/risco";
 import { riscoDoAluno, statusCobranca } from "@/lib/regras";
 import { dataISO, diasEntre, formatarData, formatarDinheiro, isoAgora, novoId } from "@/lib/datas";
-import { saudacao } from "@/lib/mascaras";
+import { linkWhats, saudacao } from "@/lib/mascaras";
 import { Resultados } from "@/components/Resultados";
 import { CartaoDinheiroSalvo } from "@/components/retencao";
 import { ReguaCobranca } from "@/components/cobranca";
@@ -19,7 +19,6 @@ import { Abas, Avatar, BarraProgresso, Botao, CabecalhoPagina, Cartao, Carregand
 type Aba = "dia" | "alunos" | "agenda" | "financeiro" | "loja" | "resultados";
 type Filtro = "todos" | "risco" | "novos";
 
-const linkWhats = (tel: string, texto: string) => `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
 
 export default function Painel() {
   const db = useBanco();
