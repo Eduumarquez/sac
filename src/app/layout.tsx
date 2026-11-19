@@ -7,7 +7,6 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "SAC · Sistema para academias", template: "%s · SAC" },
   description: "O sistema que faz o aluno ficar: da matrícula ao acompanhamento com personal e nutricionista.",
-  icons: { apple: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icone-192.png` },
   manifest: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/manifest.webmanifest`,
 };
 
