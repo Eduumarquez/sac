@@ -115,3 +115,7 @@ Nível: alto a partir de 50, médio a partir de 25. Os pesos devem ser calibrado
 ## LGPD
 
 Medidas corporais e evolução são dados de saúde (sensíveis). O campo `alunos.consentimento_saude_em` registra o consentimento explícito do aluno; não colete esses dados sem ele.
+
+## Contato
+
+Dúvidas, sugestões ou interesse em usar o SAC na sua academia: [eduardocontato.sw@gmail.com](mailto:eduardocontato.sw@gmail.com)
