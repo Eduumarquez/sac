@@ -71,6 +71,12 @@ export default function Inicio() {
       <p className="mt-10 text-center text-sm text-zinc-400">
         Modo demonstração: os dados ficam salvos só neste navegador. Na tela de entrar há contas de teste de cada perfil.
       </p>
+      <p className="mt-2 text-center text-sm text-zinc-500">
+        Contato:{" "}
+        <a href="mailto:eduardocontato.sw@gmail.com" className="font-medium text-marca-700 hover:underline">
+          eduardocontato.sw@gmail.com
+        </a>
+      </p>
     </main>
   );
 }
